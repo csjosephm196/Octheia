@@ -79,25 +79,55 @@ function removeStyles() {
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'applySettings') {
-    applySettings(request.settings);
-    sendResponse({ success: true });
-  } else if (request.action === 'removeStyles') {
-    removeStyles();
-    sendResponse({ success: true });
+  try {
+    if (!isExtensionContextValid()) {
+      sendResponse({ success: false, error: 'Extension context invalidated' });
+      return false;
+    }
+    
+    if (request.action === 'applySettings') {
+      applySettings(request.settings);
+      sendResponse({ success: true });
+    } else if (request.action === 'removeStyles') {
+      removeStyles();
+      sendResponse({ success: true });
+    }
+    return true;
+  } catch (error) {
+    sendResponse({ success: false, error: error.message });
+    return false;
   }
-  return true;
 });
+
+// Function to check if extension context is valid
+function isExtensionContextValid() {
+  try {
+    return chrome.runtime && chrome.runtime.id;
+  } catch (e) {
+    return false;
+  }
+}
 
 // Function to load and apply settings
 function loadAndApplySettings() {
-  chrome.storage.local.get(['textSize', 'backgroundColor', 'contrast'], (result) => {
-    applySettings({
-      textSize: result.textSize || 100,
-      backgroundColor: result.backgroundColor || 'default',
-      contrast: result.contrast || 100
+  if (!isExtensionContextValid()) {
+    // Extension context invalidated, page needs refresh
+    return;
+  }
+  
+  try {
+    chrome.storage.local.get(['textSize', 'backgroundColor', 'contrast'], (result) => {
+      if (!isExtensionContextValid()) return;
+      applySettings({
+        textSize: result.textSize || 100,
+        backgroundColor: result.backgroundColor || 'default',
+        contrast: result.contrast || 100
+      });
     });
-  });
+  } catch (error) {
+    // Extension context invalidated - ignore silently
+    console.log('Octheia: Extension context invalidated. Please refresh the page.');
+  }
 }
 
 // Apply settings when DOM is ready

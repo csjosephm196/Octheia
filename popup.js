@@ -20,26 +20,31 @@ const statusDiv = document.getElementById('status');
 
 // Load saved settings
 async function loadSettings() {
-  const result = await chrome.storage.local.get(['textSize', 'backgroundColor', 'contrast']);
-  
-  if (result.textSize) {
-    textSizeSlider.value = result.textSize;
-    textSizeValue.textContent = result.textSize + '%';
-  }
-  
-  if (result.backgroundColor) {
-    backgroundColorButtons.forEach(btn => {
-      if (btn.dataset.color === result.backgroundColor) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-    });
-  }
-  
-  if (result.contrast) {
-    contrastSlider.value = result.contrast;
-    contrastValue.textContent = result.contrast + '%';
+  try {
+    const result = await chrome.storage.local.get(['textSize', 'backgroundColor', 'contrast']);
+    
+    if (result.textSize) {
+      textSizeSlider.value = result.textSize;
+      textSizeValue.textContent = result.textSize + '%';
+    }
+    
+    if (result.backgroundColor) {
+      backgroundColorButtons.forEach(btn => {
+        if (btn.dataset.color === result.backgroundColor) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+    
+    if (result.contrast) {
+      contrastSlider.value = result.contrast;
+      contrastValue.textContent = result.contrast + '%';
+    }
+  } catch (error) {
+    // Extension context invalidated - user needs to reload extension
+    console.error('Octheia: Could not load settings', error);
   }
 }
 
@@ -51,7 +56,15 @@ async function saveSettings() {
     contrast: parseInt(contrastSlider.value)
   };
   
-  await chrome.storage.local.set(settings);
+  try {
+    await chrome.storage.local.set(settings);
+  } catch (error) {
+    if (error.message && error.message.includes('Extension context invalidated')) {
+      showStatus('Please reload the extension');
+      return;
+    }
+    throw error;
+  }
   
   // Apply settings to current tab
   try {
@@ -63,9 +76,14 @@ async function saveSettings() {
         await chrome.tabs.sendMessage(tab.id, { action: 'applySettings', settings });
         showStatus('Settings applied!');
       } catch (error) {
-        // Content script might not be ready yet, but settings are saved
-        // They will be applied when the page loads or refreshes
-        showStatus('Settings saved (refresh page to apply)');
+        // Handle extension context invalidated or content script not ready
+        if (error.message && error.message.includes('Extension context invalidated')) {
+          showStatus('Please refresh the page');
+        } else {
+          // Content script might not be ready yet, but settings are saved
+          // They will be applied when the page loads or refreshes
+          showStatus('Settings saved (refresh page to apply)');
+        }
       }
     } else {
       showStatus('Settings saved!');
