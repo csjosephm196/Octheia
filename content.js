@@ -26,13 +26,17 @@ function applySettings(settings) {
   let css = '';
   
   // Apply text size
-  if (settings.textSize && settings.textSize !== 100) {
-    const multiplier = settings.textSize / 100;
-    css += `
-      body, body * {
-        font-size: calc(1em * ${multiplier}) !important;
-      }
-    `;
+  if (settings.textSize) {
+    const zoomValue = settings.textSize / 100;
+    // Use CSS zoom on html element - simple and effective
+    // This scales everything proportionally including text, images, and layout
+    if (zoomValue !== 1) {
+      css += `
+        html {
+          zoom: ${zoomValue} !important;
+        }
+      `;
+    }
   }
   
   // Apply background color
@@ -85,28 +89,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return true;
 });
 
-// Load and apply saved settings on page load
-chrome.storage.local.get(['textSize', 'backgroundColor', 'contrast'], (result) => {
-  if (result.textSize || result.backgroundColor || result.contrast) {
+// Function to load and apply settings
+function loadAndApplySettings() {
+  chrome.storage.local.get(['textSize', 'backgroundColor', 'contrast'], (result) => {
     applySettings({
       textSize: result.textSize || 100,
       backgroundColor: result.backgroundColor || 'default',
       contrast: result.contrast || 100
     });
-  }
-});
+  });
+}
+
+// Apply settings when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadAndApplySettings);
+} else {
+  // DOM is already ready
+  loadAndApplySettings();
+}
+
+// Also apply on page load (for full page reloads)
+window.addEventListener('load', loadAndApplySettings);
 
 // Reapply settings when page visibility changes (for SPA navigation)
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
-    chrome.storage.local.get(['textSize', 'backgroundColor', 'contrast'], (result) => {
-      if (result.textSize || result.backgroundColor || result.contrast) {
-        applySettings({
-          textSize: result.textSize || 100,
-          backgroundColor: result.backgroundColor || 'default',
-          contrast: result.contrast || 100
-        });
-      }
-    });
+    loadAndApplySettings();
   }
 });
