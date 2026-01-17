@@ -54,10 +54,26 @@ async function saveSettings() {
   await chrome.storage.local.set(settings);
   
   // Apply settings to current tab
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  chrome.tabs.sendMessage(tab.id, { action: 'applySettings', settings });
-  
-  showStatus('Settings applied!');
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // Check if we can inject into this tab (not chrome:// pages)
+    if (tab.url && (tab.url.startsWith('http://') || tab.url.startsWith('https://'))) {
+      try {
+        await chrome.tabs.sendMessage(tab.id, { action: 'applySettings', settings });
+        showStatus('Settings applied!');
+      } catch (error) {
+        // Content script might not be ready yet, but settings are saved
+        // They will be applied when the page loads or refreshes
+        showStatus('Settings saved (refresh page to apply)');
+      }
+    } else {
+      showStatus('Settings saved!');
+    }
+  } catch (error) {
+    // Settings are still saved, just can't apply to current tab
+    showStatus('Settings saved!');
+  }
 }
 
 // Show status message
