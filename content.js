@@ -115,16 +115,35 @@ function applySettings(settings) {
     }
   }
   
-  // Apply display modes first (light, dark, night)
-  if (settings.displayMode) {
+  // Determine background color to apply
+  let bgColorToApply = null;
+  let shouldOverrideDisplayMode = false;
+  
+  if (settings.customColor && settings.customColor !== '#ffffff' && settings.customColor !== '#000000') {
+    // Custom color takes priority
+    bgColorToApply = settings.customColor;
+    shouldOverrideDisplayMode = true;
+  } else if (settings.backgroundColor && settings.backgroundColor !== 'default') {
+    // Use preset color
+    bgColorToApply = colorMap[settings.backgroundColor] || colorMap.default;
+    shouldOverrideDisplayMode = true;
+  }
+  
+  // Apply display modes (only if background color is not explicitly set)
+  if (settings.displayMode && !shouldOverrideDisplayMode) {
     if (settings.displayMode === 'light') {
       css += `
-        body {
+        html, body {
           background-color: #ffffff !important;
+        }
+        body {
           color: #000000 !important;
         }
         body * {
           background-color: inherit !important;
+        }
+        div, section, article, main, header, footer, aside, nav {
+          background-color: #ffffff !important;
         }
         img, video, canvas, svg {
           background-color: transparent !important;
@@ -132,13 +151,18 @@ function applySettings(settings) {
       `;
     } else if (settings.displayMode === 'dark') {
       css += `
-        body {
+        html, body {
           background-color: #1a1a1a !important;
+        }
+        body {
           color: #e0e0e0 !important;
         }
         body * {
           background-color: inherit !important;
           color: inherit !important;
+        }
+        div, section, article, main, header, footer, aside, nav {
+          background-color: #1a1a1a !important;
         }
         img, video, canvas, svg {
           background-color: transparent !important;
@@ -150,14 +174,19 @@ function applySettings(settings) {
     } else if (settings.displayMode === 'night') {
       // Night mode with blue light filter (warm colors)
       css += `
-        body {
+        html, body {
           background-color: #2a1f1a !important;
+        }
+        body {
           color: #f0e6d2 !important;
           filter: sepia(20%) saturate(120%) hue-rotate(350deg) brightness(0.95) !important;
         }
         body * {
           background-color: inherit !important;
           color: inherit !important;
+        }
+        div, section, article, main, header, footer, aside, nav {
+          background-color: #2a1f1a !important;
         }
         img, video, canvas, svg {
           background-color: transparent !important;
@@ -170,35 +199,19 @@ function applySettings(settings) {
     }
   }
   
-  // Apply background color (only if no display mode is set, or to override)
-  if (settings.backgroundColor && settings.backgroundColor !== 'default' && !settings.displayMode) {
-    let bgColor;
-    if (settings.customColor) {
-      bgColor = settings.customColor;
-    } else {
-      bgColor = colorMap[settings.backgroundColor] || colorMap.default;
-    }
+  // Apply background color (overrides display mode if explicitly set)
+  if (bgColorToApply && bgColorToApply !== 'transparent') {
     css += `
-      body {
-        background-color: ${bgColor} !important;
+      html, body {
+        background-color: ${bgColorToApply} !important;
       }
       body * {
         background-color: inherit !important;
       }
-      img, video, canvas, svg {
-        background-color: transparent !important;
+      div, section, article, main, header, footer, aside, nav {
+        background-color: ${bgColorToApply} !important;
       }
-    `;
-  } else if (settings.customColor && !settings.displayMode) {
-    // Custom color without preset
-    css += `
-      body {
-        background-color: ${settings.customColor} !important;
-      }
-      body * {
-        background-color: inherit !important;
-      }
-      img, video, canvas, svg {
+      img, video, canvas, svg, iframe {
         background-color: transparent !important;
       }
     `;

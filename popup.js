@@ -125,65 +125,183 @@ function showStatus(message) {
   }, 2000);
 }
 
-// AI Optimizer - interprets natural language and optimizes settings
+// AI Optimizer - intelligently parses any prompt and optimizes settings
 async function optimizeWithAI(command) {
-  const lowerCommand = command.toLowerCase();
+  const lowerCommand = command.toLowerCase().trim();
   
   // Get current settings
   const currentSettings = await chrome.storage.local.get([
-    'textSize', 'backgroundColor', 'contrast', 'displayMode'
+    'textSize', 'backgroundColor', 'customColor', 'contrast', 'displayMode'
   ]);
   
-  let optimized = { ...currentSettings };
+  let optimized = { 
+    textSize: currentSettings.textSize || 100,
+    backgroundColor: currentSettings.backgroundColor || 'default',
+    customColor: currentSettings.customColor,
+    contrast: currentSettings.contrast || 100,
+    displayMode: currentSettings.displayMode || 'none'
+  };
   
-  // Parse commands
+  let changes = [];
+  
+  // Extract numbers from command
+  const numbers = lowerCommand.match(/\d+/g);
+  const extractedNumbers = numbers ? numbers.map(n => parseInt(n)) : [];
+  
+  // Parse text size commands
+  if (lowerCommand.match(/\b(text|font|size|zoom)\s*(size|zoom)?\s*(to|at|is|=)?\s*(\d+)/i)) {
+    const match = lowerCommand.match(/(\d+)\s*(percent|%|px)?/i);
+    if (match) {
+      let size = parseInt(match[1]);
+      if (size < 50) size = 50;
+      if (size > 300) size = 300;
+      optimized.textSize = size;
+      changes.push(`Text size set to ${size}%`);
+    }
+  } else if (lowerCommand.includes('bigger') || lowerCommand.includes('larger') || 
+             lowerCommand.includes('increase') || lowerCommand.includes('zoom in')) {
+    const increment = extractedNumbers[0] || 20;
+    optimized.textSize = Math.min(300, optimized.textSize + increment);
+    changes.push(`Text size increased to ${optimized.textSize}%`);
+  } else if (lowerCommand.includes('smaller') || lowerCommand.includes('decrease') || 
+             lowerCommand.includes('zoom out')) {
+    const decrement = extractedNumbers[0] || 20;
+    optimized.textSize = Math.max(50, optimized.textSize - decrement);
+    changes.push(`Text size decreased to ${optimized.textSize}%`);
+  }
+  
+  // Parse contrast commands
+  if (lowerCommand.match(/\b(contrast)\s*(to|at|is|=)?\s*(\d+)/i)) {
+    const match = lowerCommand.match(/(\d+)\s*(percent|%)?/i);
+    if (match) {
+      let contrast = parseInt(match[1]);
+      if (contrast < 50) contrast = 50;
+      if (contrast > 200) contrast = 200;
+      optimized.contrast = contrast;
+      changes.push(`Contrast set to ${contrast}%`);
+    }
+  } else if (lowerCommand.includes('high contrast') || lowerCommand.includes('more contrast') ||
+             lowerCommand.includes('increase contrast') || lowerCommand.includes('stronger contrast')) {
+    optimized.contrast = Math.min(200, optimized.contrast + (extractedNumbers[0] || 30));
+    changes.push(`Contrast increased to ${optimized.contrast}%`);
+  } else if (lowerCommand.includes('low contrast') || lowerCommand.includes('less contrast') ||
+             lowerCommand.includes('decrease contrast') || lowerCommand.includes('softer contrast')) {
+    optimized.contrast = Math.max(50, optimized.contrast - (extractedNumbers[0] || 30));
+    changes.push(`Contrast decreased to ${optimized.contrast}%`);
+  }
+  
+  // Parse background color commands
+  const colorKeywords = {
+    'black': 'black', 'dark': 'black',
+    'white': 'white', 'light': 'white',
+    'cream': 'cream', 'beige': 'cream',
+    'yellow': 'yellow',
+    'blue': 'blue',
+    'green': 'green',
+    'default': 'default', 'original': 'default', 'normal': 'default'
+  };
+  
+  for (const [keyword, color] of Object.entries(colorKeywords)) {
+    if (lowerCommand.includes(`background ${keyword}`) || 
+        lowerCommand.includes(`${keyword} background`) ||
+        (lowerCommand.includes('background') && lowerCommand.includes(keyword))) {
+      optimized.backgroundColor = color;
+      optimized.customColor = null;
+      changes.push(`Background set to ${color}`);
+      break;
+    }
+  }
+  
+  // Parse display mode commands
+  if (lowerCommand.includes('light mode') || lowerCommand.includes('lightmode')) {
+    optimized.displayMode = 'light';
+    changes.push('Light mode enabled');
+  } else if (lowerCommand.includes('dark mode') || lowerCommand.includes('darkmode')) {
+    optimized.displayMode = 'dark';
+    changes.push('Dark mode enabled');
+  } else if (lowerCommand.includes('night mode') || lowerCommand.includes('nightmode') ||
+             lowerCommand.includes('night light') || lowerCommand.includes('blue light')) {
+    optimized.displayMode = 'night';
+    changes.push('Night mode enabled');
+  } else if (lowerCommand.includes('disable') && lowerCommand.includes('mode')) {
+    optimized.displayMode = 'none';
+    changes.push('Display mode disabled');
+  }
+  
+  // Parse semantic commands (pretty, readable, comfortable, etc.)
   if (lowerCommand.includes('pretty') || lowerCommand.includes('beautiful') || 
       lowerCommand.includes('nice') || lowerCommand.includes('aesthetic')) {
-    // Optimize for visual appeal
-    optimized.contrast = 120; // Slightly higher contrast
-    optimized.textSize = Math.max(100, Math.min(120, currentSettings.textSize || 100));
-    showStatus('Optimized for visual appeal!');
-  } else if (lowerCommand.includes('readable') || lowerCommand.includes('read')) {
-    // Optimize for readability
-    optimized.contrast = 150;
-    optimized.textSize = Math.max(120, currentSettings.textSize || 100);
-    showStatus('Optimized for readability!');
-  } else if (lowerCommand.includes('comfortable') || lowerCommand.includes('comfort')) {
-    // Optimize for comfort
-    optimized.contrast = 110;
-    optimized.textSize = Math.max(100, Math.min(110, currentSettings.textSize || 100));
-    showStatus('Optimized for comfort!');
-  } else if (lowerCommand.includes('high contrast') || lowerCommand.includes('highcontrast')) {
-    optimized.contrast = 180;
-    showStatus('High contrast applied!');
-  } else if (lowerCommand.includes('low contrast') || lowerCommand.includes('lowcontrast')) {
-    optimized.contrast = 80;
-    showStatus('Low contrast applied!');
-  } else if (lowerCommand.includes('bigger') || lowerCommand.includes('larger')) {
-    optimized.textSize = Math.min(200, (currentSettings.textSize || 100) + 20);
-    showStatus('Text size increased!');
-  } else if (lowerCommand.includes('smaller')) {
-    optimized.textSize = Math.max(80, (currentSettings.textSize || 100) - 20);
-    showStatus('Text size decreased!');
-  } else {
-    showStatus('AI optimization applied!');
+    optimized.contrast = 120;
+    optimized.textSize = Math.max(100, Math.min(120, optimized.textSize));
+    changes.push('Optimized for visual appeal');
+  }
+  
+  if (lowerCommand.includes('readable') || lowerCommand.includes('read') ||
+      lowerCommand.includes('clear') || lowerCommand.includes('sharp')) {
+    optimized.contrast = Math.max(optimized.contrast, 140);
+    optimized.textSize = Math.max(optimized.textSize, 110);
+    changes.push('Optimized for readability');
+  }
+  
+  if (lowerCommand.includes('comfortable') || lowerCommand.includes('comfort') ||
+      lowerCommand.includes('easy') || lowerCommand.includes('gentle')) {
+    optimized.contrast = Math.min(optimized.contrast, 115);
+    optimized.textSize = Math.max(100, Math.min(110, optimized.textSize));
+    changes.push('Optimized for comfort');
+  }
+  
+  if (lowerCommand.includes('bright') || lowerCommand.includes('brighter')) {
+    optimized.backgroundColor = 'white';
+    optimized.contrast = Math.max(optimized.contrast, 110);
+    changes.push('Brightened display');
+  }
+  
+  if (lowerCommand.includes('dim') || lowerCommand.includes('darker')) {
+    optimized.backgroundColor = 'black';
+    optimized.contrast = Math.max(optimized.contrast, 110);
+    changes.push('Dimmed display');
   }
   
   // Apply optimized settings
   await chrome.storage.local.set(optimized);
   
   // Update UI
-  if (optimized.textSize) {
+  if (optimized.textSize !== undefined) {
     textSizeSlider.value = optimized.textSize;
     textSizeValue.textContent = optimized.textSize + '%';
   }
-  if (optimized.contrast) {
+  if (optimized.contrast !== undefined) {
     contrastSlider.value = optimized.contrast;
     contrastValue.textContent = optimized.contrast + '%';
+  }
+  if (optimized.backgroundColor) {
+    backgroundColorButtons.forEach(btn => {
+      if (btn.dataset.color === optimized.backgroundColor) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+  if (optimized.displayMode) {
+    [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
+      if (btn.dataset.mode === optimized.displayMode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
   }
   
   // Save and apply
   await saveSettings();
+  
+  // Show status with changes
+  if (changes.length > 0) {
+    showStatus(changes.join(', '));
+  } else {
+    showStatus('Settings optimized!');
+  }
 }
 
 // Text size controls
