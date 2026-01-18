@@ -90,6 +90,21 @@ function adjustColorForContrast(baseColor, bgColor, contrastMultiplier) {
 
 // Apply settings to the page
 function applySettings(settings) {
+  // Ensure settings object exists with defaults
+  if (!settings) {
+    settings = {};
+  }
+  
+  // Set default values for missing settings
+  settings = {
+    backgroundColor: settings.backgroundColor || 'default',
+    customColor: settings.customColor,
+    contrast: settings.contrast !== undefined ? settings.contrast : 100,
+    displayMode: settings.displayMode || 'none',
+    colorBlindnessType: settings.colorBlindnessType || 'off',
+    highContrastTheme: settings.highContrastTheme || 'off'
+  };
+  
   // Remove existing style element if present
   if (styleElement) {
     styleElement.remove();
@@ -408,14 +423,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     
     if (request.action === 'applySettings') {
-      applySettings(request.settings);
-      sendResponse({ success: true });
+      try {
+        applySettings(request.settings);
+        sendResponse({ success: true });
+      } catch (error) {
+        console.error('Octheia: Error applying settings', error);
+        sendResponse({ success: false, error: error.message });
+      }
     } else if (request.action === 'removeStyles') {
       removeStyles();
       sendResponse({ success: true });
     }
     return true;
   } catch (error) {
+    console.error('Octheia: Message handler error', error);
     sendResponse({ success: false, error: error.message });
     return false;
   }
