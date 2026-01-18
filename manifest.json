@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Octheia - Visual Accessibility Helper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Help visually impaired users by resizing text, changing background colors, and adjusting contrast",
   "permissions": [
     "activeTab",
