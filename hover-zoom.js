@@ -49,15 +49,14 @@ function applyZoomToElement(element, scale, centerX, centerY) {
   const safeScale = calculateMaxSafeScale(element, scale, centerX, centerY);
   
   // Ensure the zoomed element stays within bounds using CSS
-  element.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
+  element.style.transition = 'transform 0.1s cubic-bezier(0.4, 0, 0.2, 1)';
   element.style.transformOrigin = `${centerX}px ${centerY}px`;
   element.style.zIndex = '999998'; // Ensure it's above other content
   element.style.position = 'relative'; // Help with stacking context
   
-  rafId = requestAnimationFrame(() => {
-    element.style.transform = `scale(${safeScale})`;
-    element.style.willChange = 'transform'; // Optimize for smooth performance
-  });
+  // Apply immediately for faster response
+  element.style.transform = `scale(${safeScale})`;
+  element.style.willChange = 'transform'; // Optimize for smooth performance
 }
 
 function removeZoomFromElement(element) {
@@ -74,75 +73,103 @@ function removeZoomFromElement(element) {
     return;
   }
   
+  // Cancel any pending animation frames for faster response
   if (rafId) {
     cancelAnimationFrame(rafId);
+    rafId = null;
   }
   
-  rafId = requestAnimationFrame(() => {
-    element.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
-    element.style.transform = 'scale(1)';
-    element.style.willChange = 'auto';
-    element.style.zIndex = '';
-    element.style.position = '';
-  });
+  // Apply removal immediately with faster transition
+  element.style.transition = 'transform 0.08s cubic-bezier(0.4, 0, 0.2, 1)';
+  element.style.transform = 'scale(1)';
+  element.style.willChange = 'auto';
+  element.style.zIndex = '';
+  element.style.position = '';
 }
 
-// Check if element contains text or is a text element
+// Check if element is a text node or contains only text (words)
 function isTextElement(element) {
   if (!element) return false;
   
-  // Skip non-text elements
+  // If it's a text node itself, check if it has words
+  if (element.nodeType === Node.TEXT_NODE) {
+    const text = element.textContent?.trim() || '';
+    return text.length > 0 && /[a-zA-Z0-9]/.test(text);
+  }
+  
+  // Skip all non-text elements
   const tagName = element.tagName?.toLowerCase();
-  if (['img', 'video', 'canvas', 'svg', 'iframe', 'embed', 'object', 'input', 'button', 'select', 'textarea'].includes(tagName)) {
+  const skipTags = [
+    'img', 'video', 'canvas', 'svg', 'iframe', 'embed', 'object', 
+    'input', 'button', 'select', 'textarea', 'form', 'table', 
+    'ul', 'ol', 'li', 'div', 'section', 'article', 'header', 
+    'footer', 'nav', 'aside', 'main', 'script', 'style', 'link',
+    'meta', 'noscript', 'br', 'hr', 'area', 'map', 'audio',
+    'source', 'track', 'picture', 'figure', 'figcaption'
+  ];
+  
+  if (skipTags.includes(tagName)) {
     return false;
   }
   
-  // Skip if element is body, html, or script/style
-  if (element === document.body || element === document.documentElement || 
-      tagName === 'script' || tagName === 'style') {
+  // Skip if element is body, html
+  if (element === document.body || element === document.documentElement) {
     return false;
   }
   
-  // Check if element has text content
-  const text = element.textContent?.trim() || '';
+  // Only allow inline text elements or elements that directly contain text nodes
+  const inlineTextTags = ['span', 'p', 'a', 'em', 'strong', 'b', 'i', 'u', 'small', 'mark', 'del', 'ins', 'sub', 'sup', 'code', 'kbd', 'samp', 'var', 'time', 'abbr', 'cite', 'q', 'dfn'];
   
-  // Check if element or its children have text nodes
-  if (text.length > 0) {
-    // Make sure it's actual text, not just whitespace or structure
-    const hasRealText = /[a-zA-Z0-9]/.test(text);
-    if (hasRealText) {
-      return true;
+  // If it's an inline text element, check for actual words
+  if (inlineTextTags.includes(tagName)) {
+    const text = element.textContent?.trim() || '';
+    if (text.length > 0 && /[a-zA-Z0-9]/.test(text)) {
+      // Check if it has direct text nodes (not nested elements with text)
+      const hasDirectText = Array.from(element.childNodes).some(
+        node => node.nodeType === Node.TEXT_NODE && 
+                node.textContent?.trim().length > 0 && 
+                /[a-zA-Z0-9]/.test(node.textContent)
+      );
+      return hasDirectText;
     }
   }
   
-  // Check for text nodes in children
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
-  
-  let node;
-  while (node = walker.nextNode()) {
-    if (node.textContent?.trim().length > 0 && /[a-zA-Z0-9]/.test(node.textContent)) {
-      return true;
-    }
+  // For headings, check if they contain words
+  if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
+    const text = element.textContent?.trim() || '';
+    return text.length > 0 && /[a-zA-Z0-9]/.test(text);
   }
   
   return false;
 }
 
-// Get text element at point (closest parent with text)
+// Get text element at point (closest parent with text) - only actual word elements
 function getTextElementAtPoint(x, y) {
   let element = document.elementFromPoint(x, y);
   
+  // First check if we're directly on a text node
+  if (element && element.nodeType === Node.TEXT_NODE) {
+    const parent = element.parentElement;
+    if (parent && isTextElement(parent)) {
+      return parent;
+    }
+  }
+  
   // Walk up the DOM tree to find the best text-containing element
-  while (element && element !== document.body && element !== document.documentElement) {
+  // But limit depth to avoid going too far up
+  let depth = 0;
+  const maxDepth = 5;
+  
+  while (element && element !== document.body && element !== document.documentElement && depth < maxDepth) {
     if (isTextElement(element)) {
-      return element;
+      // Double-check it has actual words, not just structure
+      const text = element.textContent?.trim() || '';
+      if (text.length > 0 && /[a-zA-Z0-9]/.test(text)) {
+        return element;
+      }
     }
     element = element.parentElement;
+    depth++;
   }
   
   return null;
@@ -192,20 +219,36 @@ function handleMouseOut(event) {
   }
 }
 
+// Track currently hovered element for efficient cleanup
+let currentHoveredElement = null;
+
 // Handle mouse enter for hover mode (default)
 function handleMouseEnter(event) {
   if (!hoverZoomEnabled || zoomMode !== 'none') return;
   
   const element = event.target;
   
-  // Only zoom text elements
-  if (!isTextElement(element)) return;
+  // Only zoom text elements - be very strict
+  if (!isTextElement(element)) {
+    // If moving from a text element to a non-text element, remove zoom immediately
+    if (currentHoveredElement) {
+      removeZoomFromElement(currentHoveredElement);
+      currentHoveredElement = null;
+    }
+    return;
+  }
+  
+  // Remove zoom from previous element if different
+  if (currentHoveredElement && currentHoveredElement !== element) {
+    removeZoomFromElement(currentHoveredElement);
+  }
   
   const rect = element.getBoundingClientRect();
   const centerX = rect.width / 2;
   const centerY = rect.height / 2;
   
   applyZoomToElement(element, zoomMagnification, centerX, centerY);
+  currentHoveredElement = element;
 }
 
 // Handle mouse leave for hover mode
@@ -213,7 +256,21 @@ function handleMouseLeave(event) {
   if (!hoverZoomEnabled || zoomMode !== 'none') return;
   
   const element = event.target;
-  removeZoomFromElement(element);
+  
+  // Only remove if it's the element we're tracking
+  if (element === currentHoveredElement) {
+    removeZoomFromElement(element);
+    currentHoveredElement = null;
+  }
+  
+  // Also check if we're leaving to a non-text element
+  const relatedTarget = event.relatedTarget;
+  if (relatedTarget && !isTextElement(relatedTarget)) {
+    if (currentHoveredElement) {
+      removeZoomFromElement(currentHoveredElement);
+      currentHoveredElement = null;
+    }
+  }
 }
 
 // Region lock mode - select region on click and drag
@@ -501,6 +558,11 @@ function cleanupHoverZoom() {
   if (hoveredElement) {
     removeZoomFromElement(hoveredElement);
     hoveredElement = null;
+  }
+  
+  if (currentHoveredElement) {
+    removeZoomFromElement(currentHoveredElement);
+    currentHoveredElement = null;
   }
   
   if (regionSelection) {
