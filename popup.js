@@ -243,7 +243,12 @@ if (zoomDisableBtn) {
 // Background reset button
 if (backgroundResetBtn) {
   backgroundResetBtn.addEventListener('click', () => {
+    // Reset custom color picker
     customColorPicker.value = '#ffffff';
+    // Reset display mode buttons
+    [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
+      if (btn) btn.classList.remove('active');
+    });
     saveSettings();
   });
 }
