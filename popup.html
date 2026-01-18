@@ -13,16 +13,15 @@
     </header>
 
     <div class="control-group">
-      <label for="textSize">
-        <span class="label-text">Text Size</span>
-        <span class="value-display" id="textSizeValue">100%</span>
+      <label for="hoverZoom">
+        <span class="label-text">Hover Zoom</span>
+        <span class="value-display" id="zoomMagnificationValue">200%</span>
       </label>
-      <input type="range" id="textSize" min="50" max="300" value="100" step="10">
+      <input type="range" id="zoomMagnification" min="150" max="500" value="200" step="25">
       <div class="button-group">
-        <button class="btn-small" id="textSizeSmall">Small</button>
-        <button class="btn-small" id="textSizeMedium">Medium</button>
-        <button class="btn-small" id="textSizeLarge">Large</button>
-        <button class="btn-small" id="textSizeReset">Reset</button>
+        <button class="btn-small" id="zoomModeCursor" data-mode="cursor">Cursor Lock</button>
+        <button class="btn-small" id="zoomModeRegion" data-mode="region">Region Lock</button>
+        <button class="btn-small" id="zoomDisable">Disable</button>
       </div>
     </div>
 

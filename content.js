@@ -101,19 +101,7 @@ function applySettings(settings) {
   
   let css = '';
   
-  // Apply text size
-  if (settings.textSize) {
-    const zoomValue = settings.textSize / 100;
-    // Use CSS zoom on html element - simple and effective
-    // This scales everything proportionally including text, images, and layout
-    if (zoomValue !== 1) {
-      css += `
-        html {
-          zoom: ${zoomValue} !important;
-        }
-      `;
-    }
-  }
+  // Hover zoom is handled separately via JavaScript event listeners
   
   // Determine background color to apply
   let bgColorToApply = null;
@@ -327,10 +315,9 @@ function loadAndApplySettings() {
   }
   
   try {
-    chrome.storage.local.get(['textSize', 'backgroundColor', 'customColor', 'contrast', 'displayMode'], (result) => {
+    chrome.storage.local.get(['backgroundColor', 'customColor', 'contrast', 'displayMode'], (result) => {
       if (!isExtensionContextValid()) return;
       applySettings({
-        textSize: result.textSize || 100,
         backgroundColor: result.backgroundColor || 'default',
         customColor: result.customColor,
         contrast: result.contrast || 100,

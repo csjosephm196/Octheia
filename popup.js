@@ -1,10 +1,9 @@
 // Get DOM elements
-const textSizeSlider = document.getElementById('textSize');
-const textSizeValue = document.getElementById('textSizeValue');
-const textSizeSmall = document.getElementById('textSizeSmall');
-const textSizeMedium = document.getElementById('textSizeMedium');
-const textSizeLarge = document.getElementById('textSizeLarge');
-const textSizeReset = document.getElementById('textSizeReset');
+const zoomMagnificationSlider = document.getElementById('zoomMagnification');
+const zoomMagnificationValue = document.getElementById('zoomMagnificationValue');
+const zoomModeCursorBtn = document.getElementById('zoomModeCursor');
+const zoomModeRegionBtn = document.getElementById('zoomModeRegion');
+const zoomDisableBtn = document.getElementById('zoomDisable');
 
 const backgroundColorButtons = document.querySelectorAll('.color-btn');
 const customColorPicker = document.getElementById('customColorPicker');
@@ -40,13 +39,26 @@ if (logoImg) {
 async function loadSettings() {
   try {
     const result = await chrome.storage.local.get([
-      'textSize', 'backgroundColor', 'customColor', 'contrast', 
+      'hoverZoomEnabled', 'zoomMagnification', 'zoomMode', 'backgroundColor', 'customColor', 'contrast', 
       'displayMode', 'aiOptimized'
     ]);
     
-    if (result.textSize) {
-      textSizeSlider.value = result.textSize;
-      textSizeValue.textContent = result.textSize + '%';
+    if (result.zoomMagnification || result.zoomMagnification === 0) {
+      zoomMagnificationSlider.value = result.zoomMagnification || 200;
+      zoomMagnificationValue.textContent = (result.zoomMagnification || 200) + '%';
+    }
+    
+    // Set active zoom mode button
+    if (result.zoomMode) {
+      [zoomModeCursorBtn, zoomModeRegionBtn].forEach(btn => {
+        if (btn && btn.dataset.mode === result.zoomMode) {
+          btn.classList.add('active');
+        } else if (btn) {
+          btn.classList.remove('active');
+        }
+      });
+    } else if (!result.hoverZoomEnabled && zoomDisableBtn) {
+      zoomDisableBtn.classList.add('active');
     }
     
     if (result.backgroundColor) {
@@ -85,8 +97,13 @@ async function loadSettings() {
 // Save settings
 async function saveSettings() {
   const activeColorBtn = document.querySelector('.color-btn.active');
+  const activeZoomMode = document.querySelector('#zoomModeCursor.active') ? 'cursor' :
+                         document.querySelector('#zoomModeRegion.active') ? 'region' : 'none';
+  
   const settings = {
-    textSize: parseInt(textSizeSlider.value),
+    hoverZoomEnabled: activeZoomMode !== 'none',
+    zoomMagnification: parseInt(zoomMagnificationSlider.value),
+    zoomMode: activeZoomMode,
     backgroundColor: activeColorBtn?.dataset.color || 'default',
     customColor: customColorPicker.value,
     contrast: parseInt(contrastSlider.value),
@@ -314,35 +331,43 @@ async function optimizeWithAI(command) {
   }
 }
 
-// Text size controls
-textSizeSlider.addEventListener('input', (e) => {
-  textSizeValue.textContent = e.target.value + '%';
-  saveSettings();
-});
+// Hover zoom controls
+if (zoomMagnificationSlider) {
+  zoomMagnificationSlider.addEventListener('input', (e) => {
+    zoomMagnificationValue.textContent = e.target.value + '%';
+    saveSettings();
+  });
+}
 
-textSizeSmall.addEventListener('click', () => {
-  textSizeSlider.value = 75;
-  textSizeValue.textContent = '75%';
-  saveSettings();
-});
+if (zoomModeCursorBtn) {
+  zoomModeCursorBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomModeCursorBtn.classList.add('active');
+    saveSettings();
+  });
+}
 
-textSizeMedium.addEventListener('click', () => {
-  textSizeSlider.value = 100;
-  textSizeValue.textContent = '100%';
-  saveSettings();
-});
+if (zoomModeRegionBtn) {
+  zoomModeRegionBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomModeRegionBtn.classList.add('active');
+    saveSettings();
+  });
+}
 
-textSizeLarge.addEventListener('click', () => {
-  textSizeSlider.value = 150;
-  textSizeValue.textContent = '150%';
-  saveSettings();
-});
-
-textSizeReset.addEventListener('click', () => {
-  textSizeSlider.value = 100;
-  textSizeValue.textContent = '100%';
-  saveSettings();
-});
+if (zoomDisableBtn) {
+  zoomDisableBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomDisableBtn.classList.add('active');
+    saveSettings();
+  });
+}
 
 // Background color controls
 backgroundColorButtons.forEach(btn => {
@@ -427,8 +452,16 @@ aiCommandInput.addEventListener('keypress', async (e) => {
 
 // Reset all
 resetAllBtn.addEventListener('click', async () => {
-  textSizeSlider.value = 100;
-  textSizeValue.textContent = '100%';
+  if (zoomMagnificationSlider) {
+    zoomMagnificationSlider.value = 200;
+    zoomMagnificationValue.textContent = '200%';
+  }
+  if (zoomDisableBtn) {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomDisableBtn.classList.add('active');
+  }
   contrastSlider.value = 100;
   contrastValue.textContent = '100%';
   backgroundColorButtons.forEach(btn => {
@@ -438,7 +471,9 @@ resetAllBtn.addEventListener('click', async () => {
     }
   });
   customColorPicker.value = '#ffffff';
-  [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => btn.classList.remove('active'));
+  [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
+    if (btn) btn.classList.remove('active');
+  });
   
   await chrome.storage.local.clear();
   saveSettings();
