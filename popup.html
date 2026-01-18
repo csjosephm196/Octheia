@@ -9,6 +9,7 @@
 <body>
   <div class="container">
     <header>
+      <img src="logo.png" alt="Octheia Logo" class="logo">
       <h1>Octheia</h1>
       <p class="subtitle">Visual Accessibility Helper</p>
     </header>
@@ -28,25 +29,14 @@
     </div>
 
     <div class="control-group">
-      <label for="backgroundColor">
-        <span class="label-text">Background Color</span>
+      <label>
+        <span class="label-text">Background & Display</span>
       </label>
       <div class="color-options">
-        <button class="color-btn" data-color="black" style="background-color: #000000;" title="Black"></button>
-        <button class="color-btn" data-color="cream" style="background-color: #f5f5dc;" title="Cream"></button>
-        <button class="color-btn" data-color="yellow" style="background-color: #ffffcc;" title="Yellow"></button>
-        <button class="color-btn" data-color="blue" style="background-color: #e6f3ff;" title="Light Blue"></button>
-        <button class="color-btn" data-color="green" style="background-color: #e6ffe6;" title="Light Green"></button>
         <button class="color-btn" data-color="default" title="Default">Default</button>
         <input type="color" id="customColorPicker" class="color-picker" title="Custom Color" value="#ffffff">
       </div>
-    </div>
-
-    <div class="control-group">
-      <label>
-        <span class="label-text">Display Mode</span>
-      </label>
-      <div class="button-group">
+      <div class="button-group" style="margin-top: 10px;">
         <button class="btn-mode" id="lightMode" data-mode="light">Light Mode</button>
         <button class="btn-mode" id="darkMode" data-mode="dark">Dark Mode</button>
         <button class="btn-mode" id="nightMode" data-mode="night">Night Mode</button>
