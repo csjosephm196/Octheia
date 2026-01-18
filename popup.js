@@ -8,12 +8,7 @@ const zoomDisableBtn = document.getElementById('zoomDisable');
 const backgroundColorButtons = document.querySelectorAll('.color-btn');
 const customColorPicker = document.getElementById('customColorPicker');
 
-const contrastSlider = document.getElementById('contrast');
-const contrastValue = document.getElementById('contrastValue');
-const contrastLow = document.getElementById('contrastLow');
-const contrastNormal = document.getElementById('contrastNormal');
-const contrastHigh = document.getElementById('contrastHigh');
-const contrastReset = document.getElementById('contrastReset');
+// Contrast slider removed
 
 const lightModeBtn = document.getElementById('lightMode');
 const darkModeBtn = document.getElementById('darkMode');
@@ -93,10 +88,7 @@ async function loadSettings() {
       customColorPicker.value = result.customColor;
     }
     
-    if (result.contrast) {
-      contrastSlider.value = result.contrast;
-      contrastValue.textContent = result.contrast + '%';
-    }
+    // Contrast slider removed
     
     if (result.displayMode) {
       [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
@@ -167,7 +159,7 @@ async function saveSettings() {
     zoomMode: activeZoomMode,
     backgroundColor: activeColorBtn?.dataset.color || 'default',
     customColor: customColorPicker.value,
-    contrast: parseInt(contrastSlider.value),
+    contrast: 100, // Contrast slider removed, default to 100
     displayMode: document.querySelector('.btn-mode.active')?.dataset.mode || 'none',
     highContrastTheme: activeHighContrast?.dataset.theme || 'off',
     focusModeEnabled: focusModeToggleBtn?.classList.contains('active') || false,
@@ -521,10 +513,7 @@ async function optimizeWithAI(command) {
       zoomModeRegionBtn.classList.add('active');
     }
   }
-  if (optimized.contrast !== undefined) {
-    contrastSlider.value = optimized.contrast;
-    contrastValue.textContent = optimized.contrast + '%';
-  }
+  // Contrast slider removed
   if (optimized.backgroundColor) {
     backgroundColorButtons.forEach(btn => {
       if (btn.dataset.color === optimized.backgroundColor) {
@@ -683,35 +672,7 @@ customColorPicker.addEventListener('input', (e) => {
   saveSettings();
 });
 
-// Contrast controls
-contrastSlider.addEventListener('input', (e) => {
-  contrastValue.textContent = e.target.value + '%';
-  saveSettings();
-});
-
-contrastLow.addEventListener('click', () => {
-  contrastSlider.value = 75;
-  contrastValue.textContent = '75%';
-  saveSettings();
-});
-
-contrastNormal.addEventListener('click', () => {
-  contrastSlider.value = 100;
-  contrastValue.textContent = '100%';
-  saveSettings();
-});
-
-contrastHigh.addEventListener('click', () => {
-  contrastSlider.value = 150;
-  contrastValue.textContent = '150%';
-  saveSettings();
-});
-
-contrastReset.addEventListener('click', () => {
-  contrastSlider.value = 100;
-  contrastValue.textContent = '100%';
-  saveSettings();
-});
+// Contrast controls removed
 
 // Display mode controls
 [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
@@ -811,8 +772,7 @@ resetAllBtn.addEventListener('click', async () => {
     });
     zoomDisableBtn.classList.add('active');
   }
-  contrastSlider.value = 100;
-  contrastValue.textContent = '100%';
+  // Contrast slider removed
   backgroundColorButtons.forEach(btn => {
     btn.classList.remove('active');
     if (btn.dataset.color === 'default') {

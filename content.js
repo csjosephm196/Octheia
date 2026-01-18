@@ -95,15 +95,20 @@ function applySettings(settings) {
     settings = {};
   }
   
-  // Set default values for missing settings
+  // Preserve original settings values before applying defaults
+  const originalSettings = { ...settings };
+  
+  // Set default values for missing settings (don't overwrite existing values)
   settings = {
-    backgroundColor: settings.backgroundColor || 'default',
-    customColor: settings.customColor,
-    contrast: settings.contrast !== undefined ? settings.contrast : 100,
-    displayMode: settings.displayMode || 'none',
-    colorBlindnessType: settings.colorBlindnessType || 'off',
-    highContrastTheme: settings.highContrastTheme || 'off'
+    backgroundColor: originalSettings.backgroundColor || 'default',
+    customColor: originalSettings.customColor,
+    contrast: originalSettings.contrast !== undefined ? originalSettings.contrast : 100,
+    displayMode: originalSettings.displayMode || 'none',
+    colorBlindnessType: originalSettings.colorBlindnessType || 'off',
+    highContrastTheme: originalSettings.highContrastTheme || 'off'
   };
+  
+  console.log('Octheia: Final settings to apply', settings);
   
   // Remove existing style element if present
   if (styleElement) {
@@ -424,6 +429,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     if (request.action === 'applySettings') {
       try {
+        console.log('Octheia: Applying settings', request.settings);
         applySettings(request.settings);
         sendResponse({ success: true });
       } catch (error) {
