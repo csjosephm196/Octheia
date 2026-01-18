@@ -249,406 +249,6 @@ if (zoomDisableBtn) {
 }
 
 // Background color controls
-backgroundColorButtons.forEach(btn => { 
-             lowerCommand.includes('increase zoom') || lowerCommand.includes('zoom in more')) {
-    const increment = extractedNumbers[0] || 50;
-    optimized.zoomMagnification = Math.min(500, optimized.zoomMagnification + increment);
-    optimized.hoverZoomEnabled = true;
-    changes.push(`Zoom magnification increased to ${optimized.zoomMagnification}%`);
-  } else if (lowerCommand.includes('smaller zoom') || lowerCommand.includes('less zoom') || 
-             lowerCommand.includes('decrease zoom') || lowerCommand.includes('zoom out more')) {
-    const decrement = extractedNumbers[0] || 50;
-    optimized.zoomMagnification = Math.max(150, optimized.zoomMagnification - decrement);
-    optimized.hoverZoomEnabled = true;
-    changes.push(`Zoom magnification decreased to ${optimized.zoomMagnification}%`);
-  }
-  
-  // Parse contrast commands
-  if (lowerCommand.match(/\b(contrast)\s*(to|at|is|=)?\s*(\d+)/i)) {
-    const match = lowerCommand.match(/(\d+)\s*(percent|%)?/i);
-    if (match) {
-      let contrast = parseInt(match[1]);
-      if (contrast < 50) contrast = 50;
-      if (contrast > 200) contrast = 200;
-      optimized.contrast = contrast;
-      changes.push(`Contrast set to ${contrast}%`);
-    }
-  } else if (lowerCommand.includes('high contrast') || lowerCommand.includes('more contrast') ||
-             lowerCommand.includes('increase contrast') || lowerCommand.includes('stronger contrast')) {
-    optimized.contrast = Math.min(200, optimized.contrast + (extractedNumbers[0] || 30));
-    changes.push(`Contrast increased to ${optimized.contrast}%`);
-  } else if (lowerCommand.includes('low contrast') || lowerCommand.includes('less contrast') ||
-             lowerCommand.includes('decrease contrast') || lowerCommand.includes('softer contrast')) {
-    optimized.contrast = Math.max(50, optimized.contrast - (extractedNumbers[0] || 30));
-    changes.push(`Contrast decreased to ${optimized.contrast}%`);
-  }
-  
-  // Parse background color commands
-  const colorKeywords = {
-    'black': 'black', 'dark': 'black',
-    'white': 'white', 'light': 'white',
-    'cream': 'cream', 'beige': 'cream',
-    'yellow': 'yellow',
-    'blue': 'blue',
-    'green': 'green',
-    'default': 'default', 'original': 'default', 'normal': 'default'
-  };
-  
-  for (const [keyword, color] of Object.entries(colorKeywords)) {
-    if (lowerCommand.includes(`background ${keyword}`) || 
-        lowerCommand.includes(`${keyword} background`) ||
-        (lowerCommand.includes('background') && lowerCommand.includes(keyword))) {
-      optimized.backgroundColor = color;
-      optimized.customColor = null;
-      changes.push(`Background set to ${color}`);
-      break;
-    }
-  }
-  
-  // Parse display mode commands
-  if (lowerCommand.includes('light mode') || lowerCommand.includes('lightmode')) {
-    optimized.displayMode = 'light';
-    changes.push('Light mode enabled');
-  } else if (lowerCommand.includes('dark mode') || lowerCommand.includes('darkmode')) {
-    optimized.displayMode = 'dark';
-    changes.push('Dark mode enabled');
-  } else if (lowerCommand.includes('night mode') || lowerCommand.includes('nightmode') ||
-             lowerCommand.includes('night light') || lowerCommand.includes('blue light')) {
-    optimized.displayMode = 'night';
-    changes.push('Night mode enabled');
-  } else if (lowerCommand.includes('disable') && lowerCommand.includes('mode')) {
-    optimized.displayMode = 'none';
-    changes.push('Display mode disabled');
-  }
-  
-  // Parse semantic commands (pretty, readable, comfortable, etc.)
-  if (lowerCommand.includes('pretty') || lowerCommand.includes('beautiful') || 
-      lowerCommand.includes('nice') || lowerCommand.includes('aesthetic')) {
-    optimized.contrast = 120;
-    optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 200);
-    optimized.hoverZoomEnabled = true;
-    changes.push('Optimized for visual appeal');
-  }
-  
-  if (lowerCommand.includes('readable') || lowerCommand.includes('read') ||
-      lowerCommand.includes('clear') || lowerCommand.includes('sharp')) {
-    optimized.contrast = Math.max(optimized.contrast, 140);
-    optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 220);
-    optimized.hoverZoomEnabled = true;
-    if (optimized.zoomMode === 'none') optimized.zoomMode = 'none';
-    changes.push('Optimized for readability');
-  }
-  
-  if (lowerCommand.includes('comfortable') || lowerCommand.includes('comfort') ||
-      lowerCommand.includes('easy') || lowerCommand.includes('gentle')) {
-    optimized.contrast = Math.min(optimized.contrast, 115);
-    optimized.zoomMagnification = Math.max(150, Math.min(200, optimized.zoomMagnification));
-    optimized.hoverZoomEnabled = true;
-    changes.push('Optimized for comfort');
-  }
-  
-  if (lowerCommand.includes('bright') || lowerCommand.includes('brighter')) {
-    optimized.backgroundColor = 'default';
-    optimized.customColor = '#ffffff';
-    optimized.contrast = Math.max(optimized.contrast, 110);
-    changes.push('Brightened display');
-  }
-  
-  if (lowerCommand.includes('dim') || lowerCommand.includes('darker')) {
-    optimized.backgroundColor = 'black';
-    optimized.contrast = Math.max(optimized.contrast, 110);
-    changes.push('Dimmed display');
-  }
-  
-  // High contrast theme support
-  if (lowerCommand.includes('high contrast') || lowerCommand.includes('high-contrast')) {
-    if (lowerCommand.includes('yellow') || lowerCommand.includes('yellow on black')) {
-      optimized.highContrastTheme = 'yellow-black';
-      optimized.displayMode = 'none';
-      optimized.backgroundColor = 'default';
-      optimized.customColor = null;
-      changes.push('Applied yellow/black high contrast theme');
-    } else if (lowerCommand.includes('white') || lowerCommand.includes('white on black')) {
-      optimized.highContrastTheme = 'white-black';
-      optimized.displayMode = 'none';
-      optimized.backgroundColor = 'default';
-      optimized.customColor = null;
-      changes.push('Applied white/black high contrast theme');
-    } else if (lowerCommand.includes('green') || lowerCommand.includes('green on black')) {
-      optimized.highContrastTheme = 'green-black';
-      optimized.displayMode = 'none';
-      optimized.backgroundColor = 'default';
-      optimized.customColor = null;
-      changes.push('Applied green/black high contrast theme');
-    } else {
-      optimized.highContrastTheme = 'white-black';
-      optimized.displayMode = 'none';
-      optimized.backgroundColor = 'default';
-      optimized.customColor = null;
-      changes.push('Applied high contrast theme');
-    }
-  }
-  
-  // Focus mode support
-  if (lowerCommand.includes('focus mode') || lowerCommand.includes('focus') ||
-      lowerCommand.includes('screen mask') || lowerCommand.includes('dim screen') ||
-      lowerCommand.includes('reduce clutter') || lowerCommand.includes('visual clutter')) {
-    optimized.focusModeEnabled = true;
-    changes.push('Focus mode enabled');
-  } else if (lowerCommand.includes('disable focus') || lowerCommand.includes('turn off focus')) {
-    optimized.focusModeEnabled = false;
-    changes.push('Focus mode disabled');
-  }
-  
-  // Colorblindness support
-  if (lowerCommand.includes('colorblind') || lowerCommand.includes('color blind') || 
-      lowerCommand.includes('colorblindness') || lowerCommand.includes('color blindness')) {
-    
-    // Protanopia (red-blind) - red-green colorblindness
-    if (lowerCommand.includes('protanopia') || lowerCommand.includes('protan') || 
-        lowerCommand.includes('red-green') || lowerCommand.includes('red green') ||
-        lowerCommand.includes('red blind')) {
-      optimized.contrast = Math.max(optimized.contrast, 150);
-      optimized.backgroundColor = 'default';
-      optimized.customColor = null;
-      optimized.displayMode = 'light';
-      optimized.colorBlindnessType = 'protanopia';
-      optimized.highContrastTheme = 'off';
-      changes.push('Optimized for protanopia (red-green colorblindness)');
-    }
-    // Deuteranopia (green-blind) - red-green colorblindness
-    else if (lowerCommand.includes('deuteranopia') || lowerCommand.includes('deuteran') ||
-             lowerCommand.includes('green blind')) {
-      optimized.contrast = Math.max(optimized.contrast, 150);
-      optimized.backgroundColor = 'default';
-      optimized.customColor = null;
-      optimized.displayMode = 'light';
-      optimized.colorBlindnessType = 'deuteranopia';
-      optimized.highContrastTheme = 'off';
-      changes.push('Optimized for deuteranopia (red-green colorblindness)');
-    }
-    // Tritanopia (blue-blind) - blue-yellow colorblindness
-    else if (lowerCommand.includes('tritanopia') || lowerCommand.includes('tritan') ||
-             lowerCommand.includes('blue-yellow') || lowerCommand.includes('blue yellow') ||
-             lowerCommand.includes('blue blind')) {
-      optimized.contrast = Math.max(optimized.contrast, 160);
-      optimized.backgroundColor = 'default';
-      optimized.customColor = null;
-      optimized.displayMode = 'light';
-      optimized.colorBlindnessType = 'tritanopia';
-      optimized.highContrastTheme = 'off';
-      changes.push('Optimized for tritanopia (blue-yellow colorblindness)');
-    }
-    // General colorblindness - high contrast, light background
-    else {
-      optimized.contrast = Math.max(optimized.contrast, 150);
-      optimized.backgroundColor = 'default';
-      optimized.customColor = null;
-      optimized.displayMode = 'light';
-      optimized.colorBlindnessType = 'protanopia'; // Default to protanopia filter
-      optimized.highContrastTheme = 'off';
-      changes.push('Optimized for colorblindness');
-    }
-  } else if (lowerCommand.includes('disable colorblindness') || lowerCommand.includes('no colorblindness')) {
-    optimized.colorBlindnessType = 'off';
-    changes.push('Colorblindness filter disabled');
-  }
-  
-  // Alt-text mode support
-  if (lowerCommand.includes('alt text') || lowerCommand.includes('alt-text') ||
-      lowerCommand.includes('image description') || lowerCommand.includes('describe image')) {
-    optimized.altTextModeEnabled = true;
-    changes.push('Alt-text mode enabled');
-  } else if (lowerCommand.includes('disable alt text') || lowerCommand.includes('turn off alt text')) {
-    optimized.altTextModeEnabled = false;
-    changes.push('Alt-text mode disabled');
-  }
-  
-  // Accessibility-focused commands
-  if (lowerCommand.includes('easier to see') || lowerCommand.includes('hard to see') ||
-      lowerCommand.includes('difficult to see') || lowerCommand.includes('can\'t see') ||
-      lowerCommand.includes('cannot see')) {
-    optimized.contrast = Math.max(optimized.contrast, 160);
-    optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 250);
-    optimized.hoverZoomEnabled = true;
-    if (optimized.zoomMode === 'none') optimized.zoomMode = 'none';
-    optimized.displayMode = 'light';
-    changes.push('Optimized for better visibility');
-  }
-  
-  if (lowerCommand.includes('visually impaired') || lowerCommand.includes('low vision') ||
-      lowerCommand.includes('vision problem') || lowerCommand.includes('poor vision')) {
-    optimized.contrast = Math.max(optimized.contrast, 170);
-    optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 300);
-    optimized.hoverZoomEnabled = true;
-    if (optimized.zoomMode === 'none') optimized.zoomMode = 'none';
-    optimized.displayMode = 'light';
-    changes.push('Optimized for visual impairment');
-  }
-  
-  // Apply optimized settings
-  await chrome.storage.local.set(optimized);
-  
-  // Update UI
-  if (optimized.zoomMagnification !== undefined) {
-    if (zoomMagnificationSlider) {
-      zoomMagnificationSlider.value = optimized.zoomMagnification;
-      zoomMagnificationValue.textContent = optimized.zoomMagnification + '%';
-    }
-  }
-  
-  if (optimized.zoomMode !== undefined && optimized.hoverZoomEnabled) {
-    if (optimized.zoomMode === 'cursor' && zoomModeCursorBtn) {
-      [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
-        if (b) b.classList.remove('active');
-      });
-      zoomModeCursorBtn.classList.add('active');
-    } else if (optimized.zoomMode === 'region' && zoomModeRegionBtn) {
-      [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
-        if (b) b.classList.remove('active');
-      });
-      zoomModeRegionBtn.classList.add('active');
-    }
-  }
-  // Contrast slider removed
-  if (optimized.backgroundColor) {
-    backgroundColorButtons.forEach(btn => {
-      if (btn.dataset.color === optimized.backgroundColor) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-    });
-  }
-  if (optimized.displayMode) {
-    [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
-      if (btn && btn.dataset.mode === optimized.displayMode) {
-        btn.classList.add('active');
-      } else if (btn) {
-        btn.classList.remove('active');
-      }
-    });
-  }
-  
-  if (optimized.highContrastTheme !== undefined) {
-    [highContrastYellowBtn, highContrastWhiteBtn, highContrastGreenBtn, highContrastOffBtn].forEach(btn => {
-      if (btn && btn.dataset.theme === optimized.highContrastTheme) {
-        btn.classList.add('active');
-      } else if (btn) {
-        btn.classList.remove('active');
-      }
-    });
-  }
-  
-  if (optimized.focusModeEnabled !== undefined) {
-    if (focusModeToggleBtn) {
-      if (optimized.focusModeEnabled) {
-        focusModeToggleBtn.classList.add('active');
-        focusModeToggleBtn.textContent = 'Disable Focus Mode';
-      } else {
-        focusModeToggleBtn.classList.remove('active');
-        focusModeToggleBtn.textContent = 'Enable Focus Mode';
-      }
-    }
-  }
-  
-  if (optimized.colorBlindnessType !== undefined) {
-    [colorBlindProtanopiaBtn, colorBlindDeuteranopiaBtn, colorBlindTritanopiaBtn, colorBlindOffBtn].forEach(btn => {
-      if (btn && btn.dataset.type === optimized.colorBlindnessType) {
-        btn.classList.add('active');
-      } else if (btn) {
-        btn.classList.remove('active');
-      }
-    });
-  }
-  
-  if (optimized.altTextModeEnabled !== undefined) {
-    if (altTextModeToggleBtn) {
-      if (optimized.altTextModeEnabled) {
-        altTextModeToggleBtn.classList.add('active');
-        altTextModeToggleBtn.textContent = 'Disable Alt-Text Mode';
-      } else {
-        altTextModeToggleBtn.classList.remove('active');
-        altTextModeToggleBtn.textContent = 'Enable Alt-Text Mode';
-      }
-    }
-  }
-  
-  // Save and apply
-  await saveSettings();
-  
-  // If no specific changes detected, try to infer intent from the command
-  if (changes.length === 0) {
-    // Try to extract any numbers for settings
-    if (extractedNumbers.length > 0) {
-      const num = extractedNumbers[0];
-      if (num >= 150 && num <= 500 && (lowerCommand.includes('zoom') || lowerCommand.includes('magnif'))) {
-        optimized.zoomMagnification = num;
-        optimized.hoverZoomEnabled = true;
-        changes.push(`Zoom set to ${num}%`);
-      } else if (num >= 50 && num <= 200 && (lowerCommand.includes('contrast'))) {
-        optimized.contrast = num;
-        changes.push(`Contrast set to ${num}%`);
-      }
-    }
-    
-    // Generic optimization based on keywords
-    if (lowerCommand.includes('better') || lowerCommand.includes('improve') || 
-        lowerCommand.includes('enhance') || lowerCommand.includes('optimize')) {
-      optimized.contrast = Math.max(optimized.contrast, 130);
-      optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 220);
-      optimized.hoverZoomEnabled = true;
-      changes.push('Settings optimized for better viewing');
-    }
-  }
-  
-  // Show status with changes
-  if (changes.length > 0) {
-    showStatus(changes.join(', '));
-  } else {
-    showStatus('Settings optimized!');
-  }
-}
-
-// Hover zoom controls
-if (zoomMagnificationSlider) {
-  zoomMagnificationSlider.addEventListener('input', (e) => {
-    zoomMagnificationValue.textContent = e.target.value + '%';
-    saveSettings();
-  });
-}
-
-if (zoomModeCursorBtn) {
-  zoomModeCursorBtn.addEventListener('click', () => {
-    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
-      if (b) b.classList.remove('active');
-    });
-    zoomModeCursorBtn.classList.add('active');
-    saveSettings();
-  });
-}
-
-if (zoomModeRegionBtn) {
-  zoomModeRegionBtn.addEventListener('click', () => {
-    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
-      if (b) b.classList.remove('active');
-    });
-    zoomModeRegionBtn.classList.add('active');
-    saveSettings();
-  });
-}
-
-if (zoomDisableBtn) {
-  zoomDisableBtn.addEventListener('click', () => {
-    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
-      if (b) b.classList.remove('active');
-    });
-    zoomDisableBtn.classList.add('active');
-    saveSettings();
-  });
-}
-
-// Background color controls
 backgroundColorButtons.forEach(btn => {
   btn.addEventListener('click', () => {
     backgroundColorButtons.forEach(b => b.classList.remove('active'));
@@ -684,6 +284,8 @@ customColorPicker.addEventListener('input', (e) => {
   }
 });
 
+// AI Optimizer orphaned code removed - entire block deleted (~350 lines)
+
 // High contrast theme controls
 [highContrastYellowBtn, highContrastWhiteBtn, highContrastGreenBtn, highContrastOffBtn].forEach(btn => {
   if (btn) {
@@ -696,6 +298,8 @@ customColorPicker.addEventListener('input', (e) => {
     });
   }
 });
+
+// AI Optimizer orphaned code removed - entire block deleted (~350 lines)
 
 // Focus mode toggle
 if (focusModeToggleBtn) {
@@ -710,6 +314,8 @@ if (focusModeToggleBtn) {
   });
 }
 
+// AI Optimizer orphaned code removed - entire block deleted (~330 lines)
+
 // Color blindness controls
 [colorBlindProtanopiaBtn, colorBlindDeuteranopiaBtn, colorBlindTritanopiaBtn, colorBlindOffBtn].forEach(btn => {
   if (btn) {
@@ -722,6 +328,8 @@ if (focusModeToggleBtn) {
     });
   }
 });
+
+// AI Optimizer orphaned code removed - entire block deleted (~330 lines)
 
 // Alt-text mode toggle
 if (altTextModeToggleBtn) {
@@ -736,7 +344,7 @@ if (altTextModeToggleBtn) {
   });
 }
 
-// AI Optimizer removed - event listeners deleted
+// AI Optimizer orphaned code removed - entire block deleted (~325 lines)
 
 // Reset all
 resetAllBtn.addEventListener('click', async () => {
