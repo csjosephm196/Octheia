@@ -77,7 +77,8 @@ header::after {
 }
 
 .logo {
-  width: 140px;
+  width: 100%;
+  max-width: 350px;
   height: auto;
   display: block;
   margin: 0 auto 15px auto;
@@ -85,10 +86,11 @@ header::after {
   transition: transform 0.3s ease, filter 0.3s ease;
   position: relative;
   z-index: 1;
+  object-fit: contain;
 }
 
 .logo:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
   filter: drop-shadow(0 6px 16px rgba(59, 130, 246, 0.6));
 }
 
