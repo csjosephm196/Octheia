@@ -22,6 +22,24 @@ const nightModeBtn = document.getElementById('nightMode');
 const aiCommandInput = document.getElementById('aiCommand');
 const aiOptimizeBtn = document.getElementById('aiOptimizeBtn');
 
+// High contrast theme buttons
+const highContrastYellowBtn = document.getElementById('highContrastYellow');
+const highContrastWhiteBtn = document.getElementById('highContrastWhite');
+const highContrastGreenBtn = document.getElementById('highContrastGreen');
+const highContrastOffBtn = document.getElementById('highContrastOff');
+
+// Focus mode toggle
+const focusModeToggleBtn = document.getElementById('focusModeToggle');
+
+// Color blindness buttons
+const colorBlindProtanopiaBtn = document.getElementById('colorBlindProtanopia');
+const colorBlindDeuteranopiaBtn = document.getElementById('colorBlindDeuteranopia');
+const colorBlindTritanopiaBtn = document.getElementById('colorBlindTritanopia');
+const colorBlindOffBtn = document.getElementById('colorBlindOff');
+
+// Alt-text generator toggle
+const altTextModeToggleBtn = document.getElementById('altTextModeToggle');
+
 const resetAllBtn = document.getElementById('resetAll');
 const statusDiv = document.getElementById('status');
 const logoImg = document.getElementById('logo');
@@ -40,7 +58,7 @@ async function loadSettings() {
   try {
     const result = await chrome.storage.local.get([
       'hoverZoomEnabled', 'zoomMagnification', 'zoomMode', 'backgroundColor', 'customColor', 'contrast', 
-      'displayMode', 'aiOptimized'
+      'displayMode', 'aiOptimized', 'highContrastTheme', 'focusModeEnabled', 'colorBlindnessType', 'altTextModeEnabled'
     ]);
     
     if (result.zoomMagnification || result.zoomMagnification === 0) {
@@ -82,12 +100,52 @@ async function loadSettings() {
     
     if (result.displayMode) {
       [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
-        if (btn.dataset.mode === result.displayMode) {
+        if (btn && btn.dataset.mode === result.displayMode) {
           btn.classList.add('active');
-        } else {
+        } else if (btn) {
           btn.classList.remove('active');
         }
       });
+    }
+    
+    // Load high contrast theme
+    if (result.highContrastTheme) {
+      [highContrastYellowBtn, highContrastWhiteBtn, highContrastGreenBtn, highContrastOffBtn].forEach(btn => {
+        if (btn && btn.dataset.theme === result.highContrastTheme) {
+          btn.classList.add('active');
+        } else if (btn) {
+          btn.classList.remove('active');
+        }
+      });
+    }
+    
+    // Load focus mode
+    if (result.focusModeEnabled && focusModeToggleBtn) {
+      focusModeToggleBtn.textContent = 'Disable Focus Mode';
+      focusModeToggleBtn.classList.add('active');
+    } else if (focusModeToggleBtn) {
+      focusModeToggleBtn.textContent = 'Enable Focus Mode';
+      focusModeToggleBtn.classList.remove('active');
+    }
+    
+    // Load color blindness
+    if (result.colorBlindnessType) {
+      [colorBlindProtanopiaBtn, colorBlindDeuteranopiaBtn, colorBlindTritanopiaBtn, colorBlindOffBtn].forEach(btn => {
+        if (btn && btn.dataset.type === result.colorBlindnessType) {
+          btn.classList.add('active');
+        } else if (btn) {
+          btn.classList.remove('active');
+        }
+      });
+    }
+    
+    // Load alt-text mode
+    if (result.altTextModeEnabled && altTextModeToggleBtn) {
+      altTextModeToggleBtn.textContent = 'Disable Alt-Text Mode';
+      altTextModeToggleBtn.classList.add('active');
+    } else if (altTextModeToggleBtn) {
+      altTextModeToggleBtn.textContent = 'Enable Alt-Text Mode';
+      altTextModeToggleBtn.classList.remove('active');
     }
   } catch (error) {
     console.error('Octheia: Could not load settings', error);
@@ -100,6 +158,9 @@ async function saveSettings() {
   const activeZoomMode = document.querySelector('#zoomModeCursor.active') ? 'cursor' :
                          document.querySelector('#zoomModeRegion.active') ? 'region' : 'none';
   
+  const activeHighContrast = document.querySelector('[data-theme].active');
+  const activeColorBlind = document.querySelector('[data-type].active');
+  
   const settings = {
     hoverZoomEnabled: activeZoomMode !== 'none',
     zoomMagnification: parseInt(zoomMagnificationSlider.value),
@@ -107,7 +168,11 @@ async function saveSettings() {
     backgroundColor: activeColorBtn?.dataset.color || 'default',
     customColor: customColorPicker.value,
     contrast: parseInt(contrastSlider.value),
-    displayMode: document.querySelector('.btn-mode.active')?.dataset.mode || 'none'
+    displayMode: document.querySelector('.btn-mode.active')?.dataset.mode || 'none',
+    highContrastTheme: activeHighContrast?.dataset.theme || 'off',
+    focusModeEnabled: focusModeToggleBtn?.classList.contains('active') || false,
+    colorBlindnessType: activeColorBlind?.dataset.type === 'off' ? 'off' : (activeColorBlind?.dataset.type || 'off'),
+    altTextModeEnabled: altTextModeToggleBtn?.classList.contains('active') || false
   };
   
   try {
@@ -159,7 +224,8 @@ async function optimizeWithAI(command) {
   // Get current settings
   const currentSettings = await chrome.storage.local.get([
     'hoverZoomEnabled', 'zoomMagnification', 'zoomMode', 
-    'backgroundColor', 'customColor', 'contrast', 'displayMode', 'colorBlindnessType'
+    'backgroundColor', 'customColor', 'contrast', 'displayMode', 'colorBlindnessType',
+    'highContrastTheme', 'focusModeEnabled', 'altTextModeEnabled'
   ]);
   
   let optimized = { 
@@ -170,7 +236,10 @@ async function optimizeWithAI(command) {
     customColor: currentSettings.customColor,
     contrast: currentSettings.contrast || 100,
     displayMode: currentSettings.displayMode || 'none',
-    colorBlindnessType: currentSettings.colorBlindnessType || null
+    colorBlindnessType: currentSettings.colorBlindnessType || 'off',
+    highContrastTheme: currentSettings.highContrastTheme || 'off',
+    focusModeEnabled: currentSettings.focusModeEnabled || false,
+    altTextModeEnabled: currentSettings.altTextModeEnabled || false
   };
   
   let changes = [];
@@ -302,6 +371,46 @@ async function optimizeWithAI(command) {
     changes.push('Dimmed display');
   }
   
+  // High contrast theme support
+  if (lowerCommand.includes('high contrast') || lowerCommand.includes('high-contrast')) {
+    if (lowerCommand.includes('yellow') || lowerCommand.includes('yellow on black')) {
+      optimized.highContrastTheme = 'yellow-black';
+      optimized.displayMode = 'none';
+      optimized.backgroundColor = 'default';
+      optimized.customColor = null;
+      changes.push('Applied yellow/black high contrast theme');
+    } else if (lowerCommand.includes('white') || lowerCommand.includes('white on black')) {
+      optimized.highContrastTheme = 'white-black';
+      optimized.displayMode = 'none';
+      optimized.backgroundColor = 'default';
+      optimized.customColor = null;
+      changes.push('Applied white/black high contrast theme');
+    } else if (lowerCommand.includes('green') || lowerCommand.includes('green on black')) {
+      optimized.highContrastTheme = 'green-black';
+      optimized.displayMode = 'none';
+      optimized.backgroundColor = 'default';
+      optimized.customColor = null;
+      changes.push('Applied green/black high contrast theme');
+    } else {
+      optimized.highContrastTheme = 'white-black';
+      optimized.displayMode = 'none';
+      optimized.backgroundColor = 'default';
+      optimized.customColor = null;
+      changes.push('Applied high contrast theme');
+    }
+  }
+  
+  // Focus mode support
+  if (lowerCommand.includes('focus mode') || lowerCommand.includes('focus') ||
+      lowerCommand.includes('screen mask') || lowerCommand.includes('dim screen') ||
+      lowerCommand.includes('reduce clutter') || lowerCommand.includes('visual clutter')) {
+    optimized.focusModeEnabled = true;
+    changes.push('Focus mode enabled');
+  } else if (lowerCommand.includes('disable focus') || lowerCommand.includes('turn off focus')) {
+    optimized.focusModeEnabled = false;
+    changes.push('Focus mode disabled');
+  }
+  
   // Colorblindness support
   if (lowerCommand.includes('colorblind') || lowerCommand.includes('color blind') || 
       lowerCommand.includes('colorblindness') || lowerCommand.includes('color blindness')) {
@@ -315,6 +424,7 @@ async function optimizeWithAI(command) {
       optimized.customColor = null;
       optimized.displayMode = 'light';
       optimized.colorBlindnessType = 'protanopia';
+      optimized.highContrastTheme = 'off';
       changes.push('Optimized for protanopia (red-green colorblindness)');
     }
     // Deuteranopia (green-blind) - red-green colorblindness
@@ -325,6 +435,7 @@ async function optimizeWithAI(command) {
       optimized.customColor = null;
       optimized.displayMode = 'light';
       optimized.colorBlindnessType = 'deuteranopia';
+      optimized.highContrastTheme = 'off';
       changes.push('Optimized for deuteranopia (red-green colorblindness)');
     }
     // Tritanopia (blue-blind) - blue-yellow colorblindness
@@ -336,6 +447,7 @@ async function optimizeWithAI(command) {
       optimized.customColor = null;
       optimized.displayMode = 'light';
       optimized.colorBlindnessType = 'tritanopia';
+      optimized.highContrastTheme = 'off';
       changes.push('Optimized for tritanopia (blue-yellow colorblindness)');
     }
     // General colorblindness - high contrast, light background
@@ -344,9 +456,23 @@ async function optimizeWithAI(command) {
       optimized.backgroundColor = 'default';
       optimized.customColor = null;
       optimized.displayMode = 'light';
-      optimized.colorBlindnessType = 'colorblind-help';
-      changes.push('Optimized for colorblindness - high contrast enabled');
+      optimized.colorBlindnessType = 'protanopia'; // Default to protanopia filter
+      optimized.highContrastTheme = 'off';
+      changes.push('Optimized for colorblindness');
     }
+  } else if (lowerCommand.includes('disable colorblindness') || lowerCommand.includes('no colorblindness')) {
+    optimized.colorBlindnessType = 'off';
+    changes.push('Colorblindness filter disabled');
+  }
+  
+  // Alt-text mode support
+  if (lowerCommand.includes('alt text') || lowerCommand.includes('alt-text') ||
+      lowerCommand.includes('image description') || lowerCommand.includes('describe image')) {
+    optimized.altTextModeEnabled = true;
+    changes.push('Alt-text mode enabled');
+  } else if (lowerCommand.includes('disable alt text') || lowerCommand.includes('turn off alt text')) {
+    optimized.altTextModeEnabled = false;
+    changes.push('Alt-text mode disabled');
   }
   
   // Accessibility-focused commands
@@ -410,12 +536,56 @@ async function optimizeWithAI(command) {
   }
   if (optimized.displayMode) {
     [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
-      if (btn.dataset.mode === optimized.displayMode) {
+      if (btn && btn.dataset.mode === optimized.displayMode) {
         btn.classList.add('active');
-      } else {
+      } else if (btn) {
         btn.classList.remove('active');
       }
     });
+  }
+  
+  if (optimized.highContrastTheme !== undefined) {
+    [highContrastYellowBtn, highContrastWhiteBtn, highContrastGreenBtn, highContrastOffBtn].forEach(btn => {
+      if (btn && btn.dataset.theme === optimized.highContrastTheme) {
+        btn.classList.add('active');
+      } else if (btn) {
+        btn.classList.remove('active');
+      }
+    });
+  }
+  
+  if (optimized.focusModeEnabled !== undefined) {
+    if (focusModeToggleBtn) {
+      if (optimized.focusModeEnabled) {
+        focusModeToggleBtn.classList.add('active');
+        focusModeToggleBtn.textContent = 'Disable Focus Mode';
+      } else {
+        focusModeToggleBtn.classList.remove('active');
+        focusModeToggleBtn.textContent = 'Enable Focus Mode';
+      }
+    }
+  }
+  
+  if (optimized.colorBlindnessType !== undefined) {
+    [colorBlindProtanopiaBtn, colorBlindDeuteranopiaBtn, colorBlindTritanopiaBtn, colorBlindOffBtn].forEach(btn => {
+      if (btn && btn.dataset.type === optimized.colorBlindnessType) {
+        btn.classList.add('active');
+      } else if (btn) {
+        btn.classList.remove('active');
+      }
+    });
+  }
+  
+  if (optimized.altTextModeEnabled !== undefined) {
+    if (altTextModeToggleBtn) {
+      if (optimized.altTextModeEnabled) {
+        altTextModeToggleBtn.classList.add('active');
+        altTextModeToggleBtn.textContent = 'Disable Alt-Text Mode';
+      } else {
+        altTextModeToggleBtn.classList.remove('active');
+        altTextModeToggleBtn.textContent = 'Enable Alt-Text Mode';
+      }
+    }
   }
   
   // Save and apply
@@ -545,12 +715,68 @@ contrastReset.addEventListener('click', () => {
 
 // Display mode controls
 [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
-  btn.addEventListener('click', () => {
-    [lightModeBtn, darkModeBtn, nightModeBtn].forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      [lightModeBtn, darkModeBtn, nightModeBtn].forEach(b => {
+        if (b) b.classList.remove('active');
+      });
+      btn.classList.add('active');
+      saveSettings();
+    });
+  }
+});
+
+// High contrast theme controls
+[highContrastYellowBtn, highContrastWhiteBtn, highContrastGreenBtn, highContrastOffBtn].forEach(btn => {
+  if (btn) {
+    btn.addEventListener('click', () => {
+      [highContrastYellowBtn, highContrastWhiteBtn, highContrastGreenBtn, highContrastOffBtn].forEach(b => {
+        if (b) b.classList.remove('active');
+      });
+      btn.classList.add('active');
+      saveSettings();
+    });
+  }
+});
+
+// Focus mode toggle
+if (focusModeToggleBtn) {
+  focusModeToggleBtn.addEventListener('click', () => {
+    focusModeToggleBtn.classList.toggle('active');
+    if (focusModeToggleBtn.classList.contains('active')) {
+      focusModeToggleBtn.textContent = 'Disable Focus Mode';
+    } else {
+      focusModeToggleBtn.textContent = 'Enable Focus Mode';
+    }
     saveSettings();
   });
+}
+
+// Color blindness controls
+[colorBlindProtanopiaBtn, colorBlindDeuteranopiaBtn, colorBlindTritanopiaBtn, colorBlindOffBtn].forEach(btn => {
+  if (btn) {
+    btn.addEventListener('click', () => {
+      [colorBlindProtanopiaBtn, colorBlindDeuteranopiaBtn, colorBlindTritanopiaBtn, colorBlindOffBtn].forEach(b => {
+        if (b) b.classList.remove('active');
+      });
+      btn.classList.add('active');
+      saveSettings();
+    });
+  }
 });
+
+// Alt-text mode toggle
+if (altTextModeToggleBtn) {
+  altTextModeToggleBtn.addEventListener('click', () => {
+    altTextModeToggleBtn.classList.toggle('active');
+    if (altTextModeToggleBtn.classList.contains('active')) {
+      altTextModeToggleBtn.textContent = 'Disable Alt-Text Mode';
+    } else {
+      altTextModeToggleBtn.textContent = 'Enable Alt-Text Mode';
+    }
+    saveSettings();
+  });
+}
 
 // AI Optimizer
 aiOptimizeBtn.addEventListener('click', async () => {
@@ -597,6 +823,30 @@ resetAllBtn.addEventListener('click', async () => {
   [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
     if (btn) btn.classList.remove('active');
   });
+  
+  // Reset high contrast themes
+  [highContrastYellowBtn, highContrastWhiteBtn, highContrastGreenBtn, highContrastOffBtn].forEach(btn => {
+    if (btn) btn.classList.remove('active');
+  });
+  if (highContrastOffBtn) highContrastOffBtn.classList.add('active');
+  
+  // Reset focus mode
+  if (focusModeToggleBtn) {
+    focusModeToggleBtn.classList.remove('active');
+    focusModeToggleBtn.textContent = 'Enable Focus Mode';
+  }
+  
+  // Reset color blindness
+  [colorBlindProtanopiaBtn, colorBlindDeuteranopiaBtn, colorBlindTritanopiaBtn, colorBlindOffBtn].forEach(btn => {
+    if (btn) btn.classList.remove('active');
+  });
+  if (colorBlindOffBtn) colorBlindOffBtn.classList.add('active');
+  
+  // Reset alt-text mode
+  if (altTextModeToggleBtn) {
+    altTextModeToggleBtn.classList.remove('active');
+    altTextModeToggleBtn.textContent = 'Enable Alt-Text Mode';
+  }
   
   await chrome.storage.local.clear();
   saveSettings();

@@ -103,22 +103,24 @@ function applySettings(settings) {
   
   // Hover zoom is handled separately via JavaScript event listeners
   
-  // Determine background color to apply
+  // Determine background color to apply (skip if high contrast theme is active)
   let bgColorToApply = null;
   let shouldOverrideDisplayMode = false;
+  const isHighContrastActive = settings.highContrastTheme && settings.highContrastTheme !== 'off';
   
-  if (settings.customColor && settings.customColor !== '#ffffff' && settings.customColor !== '#000000') {
-    // Custom color takes priority
-    bgColorToApply = settings.customColor;
-    shouldOverrideDisplayMode = true;
-  } else if (settings.backgroundColor && settings.backgroundColor !== 'default') {
-    // Use preset color
-    bgColorToApply = colorMap[settings.backgroundColor] || colorMap.default;
-    shouldOverrideDisplayMode = true;
-  }
-  
-  // Apply display modes (only if background color is not explicitly set)
-  if (settings.displayMode && !shouldOverrideDisplayMode) {
+  if (!isHighContrastActive) {
+    if (settings.customColor && settings.customColor !== '#ffffff' && settings.customColor !== '#000000') {
+      // Custom color takes priority
+      bgColorToApply = settings.customColor;
+      shouldOverrideDisplayMode = true;
+    } else if (settings.backgroundColor && settings.backgroundColor !== 'default') {
+      // Use preset color
+      bgColorToApply = colorMap[settings.backgroundColor] || colorMap.default;
+      shouldOverrideDisplayMode = true;
+    }
+    
+    // Apply display modes (only if background color is not explicitly set and high contrast is off)
+    if (settings.displayMode && !shouldOverrideDisplayMode) {
     if (settings.displayMode === 'light') {
       css += `
         html, body {
@@ -187,8 +189,8 @@ function applySettings(settings) {
     }
   }
   
-  // Apply background color (overrides display mode if explicitly set)
-  if (bgColorToApply && bgColorToApply !== 'transparent') {
+  // Apply background color (overrides display mode if explicitly set, but not if high contrast is active)
+  if (!isHighContrastActive && bgColorToApply && bgColorToApply !== 'transparent') {
     css += `
       html, body {
         background-color: ${bgColorToApply} !important;
@@ -205,50 +207,119 @@ function applySettings(settings) {
     `;
   }
   
-  // Apply colorblindness assistance filters
-  if (settings.colorBlindnessType) {
+  // Apply high contrast themes (highest priority - overrides all other background/display settings)
+  if (settings.highContrastTheme && settings.highContrastTheme !== 'off') {
+    switch(settings.highContrastTheme) {
+      case 'yellow-black':
+        css += `
+          html, body {
+            background-color: #000000 !important;
+          }
+          body, p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, label, input, textarea, select, button {
+            color: #FFFF00 !important;
+            background-color: #000000 !important;
+          }
+          a {
+            color: #FFFF00 !important;
+            text-decoration: underline !important;
+          }
+          div, section, article, main, header, footer, aside, nav {
+            background-color: #000000 !important;
+          }
+          img, video, canvas, svg {
+            background-color: transparent !important;
+          }
+        `;
+        break;
+      case 'white-black':
+        css += `
+          html, body {
+            background-color: #000000 !important;
+          }
+          body, p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, label, input, textarea, select, button {
+            color: #FFFFFF !important;
+            background-color: #000000 !important;
+          }
+          a {
+            color: #FFFFFF !important;
+            text-decoration: underline !important;
+          }
+          div, section, article, main, header, footer, aside, nav {
+            background-color: #000000 !important;
+          }
+          img, video, canvas, svg {
+            background-color: transparent !important;
+          }
+        `;
+        break;
+      case 'green-black':
+        css += `
+          html, body {
+            background-color: #000000 !important;
+          }
+          body, p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, label, input, textarea, select, button {
+            color: #00FF00 !important;
+            background-color: #000000 !important;
+          }
+          a {
+            color: #00FF00 !important;
+            text-decoration: underline !important;
+          }
+          div, section, article, main, header, footer, aside, nav {
+            background-color: #000000 !important;
+          }
+          img, video, canvas, svg {
+            background-color: transparent !important;
+          }
+        `;
+        break;
+    }
+  }
+  
+  // Apply enhanced colorblindness filters with optimal color shifting
+  // Note: Filters are applied to html element to avoid compounding effects
+  if (settings.colorBlindnessType && settings.colorBlindnessType !== 'off' && settings.colorBlindnessType !== 'none') {
     switch(settings.colorBlindnessType) {
       case 'protanopia':
-        // Red-blind assistance - enhance saturation and contrast to help distinguish colors
+        // Red-blind: Best colors are bright yellow, cyan (light blue), or white
+        // Enhance brightness and shift colors toward yellow/cyan spectrum
         css += `
-          body, body * {
-            filter: contrast(1.2) saturate(1.4) brightness(1.05) !important;
+          html {
+            filter: contrast(1.4) saturate(1.8) brightness(1.15) hue-rotate(-5deg) !important;
           }
-          /* Enhance red-green distinction */
-          a, button, [style*="color: red"], [style*="color: #ff"], [style*="color: rgb(255"] {
-            filter: contrast(1.3) saturate(1.6) !important;
+          /* Additional enhancement for images to favor yellow/cyan */
+          img, video, canvas, svg {
+            filter: contrast(1.3) saturate(1.9) brightness(1.12) hue-rotate(-3deg) !important;
           }
         `;
         break;
       case 'deuteranopia':
-        // Green-blind assistance - similar to protanopia
+        // Green-blind: Best colors are blue and yellow
+        // Enhance blue and yellow tones, reduce green interference
         css += `
-          body, body * {
-            filter: contrast(1.2) saturate(1.4) brightness(1.05) !important;
+          html {
+            filter: contrast(1.4) saturate(1.8) brightness(1.15) hue-rotate(8deg) !important;
           }
-          /* Enhance red-green distinction */
-          a, button, [style*="color: green"], [style*="color: #00ff"], [style*="color: rgb(0,255"] {
-            filter: contrast(1.3) saturate(1.6) !important;
+          /* Shift colors toward blue/yellow spectrum */
+          img, video, canvas, svg {
+            filter: contrast(1.3) saturate(1.9) brightness(1.12) hue-rotate(5deg) !important;
           }
         `;
         break;
       case 'tritanopia':
-        // Blue-blind assistance - enhance blue-yellow distinction
+        // Blue-yellow blind: Best colors are black, white, or high saturated red
+        // Maximize contrast, boost red saturation, reduce blue/yellow dependency
         css += `
-          body, body * {
-            filter: contrast(1.25) saturate(1.5) brightness(1.05) !important;
+          html {
+            filter: contrast(1.6) saturate(2.2) brightness(1.08) hue-rotate(-20deg) !important;
           }
-          /* Enhance blue-yellow distinction */
-          a, button, [style*="color: blue"], [style*="color: #00"], [style*="color: rgb(0,0,255"] {
-            filter: contrast(1.4) saturate(1.7) !important;
+          /* Shift away from blue/yellow, enhance reds and grayscale contrast */
+          img, video, canvas, svg {
+            filter: contrast(1.5) saturate(2.3) brightness(1.05) hue-rotate(-15deg) !important;
           }
-        `;
-        break;
-      case 'colorblind-help':
-        // General colorblindness assistance - high contrast and saturation
-        css += `
-          body, body * {
-            filter: contrast(1.3) saturate(1.5) !important;
+          /* Specifically boost red saturation for better visibility */
+          a, button {
+            filter: contrast(1.7) saturate(2.5) brightness(1.1) !important;
           }
         `;
         break;
@@ -365,14 +436,15 @@ function loadAndApplySettings() {
   }
   
   try {
-    chrome.storage.local.get(['backgroundColor', 'customColor', 'contrast', 'displayMode', 'colorBlindnessType'], (result) => {
+    chrome.storage.local.get(['backgroundColor', 'customColor', 'contrast', 'displayMode', 'colorBlindnessType', 'highContrastTheme'], (result) => {
       if (!isExtensionContextValid()) return;
       applySettings({
         backgroundColor: result.backgroundColor || 'default',
         customColor: result.customColor,
         contrast: result.contrast || 100,
         displayMode: result.displayMode,
-        colorBlindnessType: result.colorBlindnessType
+        colorBlindnessType: result.colorBlindnessType,
+        highContrastTheme: result.highContrastTheme || 'off'
       });
     });
   } catch (error) {
