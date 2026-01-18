@@ -43,23 +43,43 @@ body::after {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(255, 255, 255, 0.03) 2px,
-      rgba(255, 255, 255, 0.03) 4px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 2px,
-      rgba(255, 255, 255, 0.03) 2px,
-      rgba(255, 255, 255, 0.03) 4px
-    );
+  background-image: 
+    /* Small stars (1px) */
+    radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 35% 45%, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 65% 30%, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 85% 55%, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 25% 70%, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 50% 85%, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 90% 25%, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+    /* Medium stars (2px) */
+    radial-gradient(circle at 10% 15%, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+    radial-gradient(circle at 45% 20%, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+    radial-gradient(circle at 70% 50%, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+    radial-gradient(circle at 30% 60%, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+    radial-gradient(circle at 55% 90%, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+    radial-gradient(circle at 20% 90%, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+    /* Larger stars (3px) */
+    radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 1) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 60% 65%, rgba(255, 255, 255, 1) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 25% 50%, rgba(255, 255, 255, 1) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 95% 45%, rgba(255, 255, 255, 1) 1.5px, transparent 1.5px),
+    /* Extra small stars (0.5px) - more scattered */
+    radial-gradient(circle at 5% 30%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 12% 60%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 42% 10%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 58% 25%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 88% 35%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 72% 85%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 38% 80%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 18% 85%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 52% 50%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px),
+    radial-gradient(circle at 95% 70%, rgba(255, 255, 255, 0.6) 0.3px, transparent 0.3px);
+  background-size: 100% 100%;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 1;
 }
 
 @keyframes pulse {
