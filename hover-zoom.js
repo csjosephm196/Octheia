@@ -8,6 +8,32 @@ let hoveredElement = null;
 let regionSelection = null;
 let rafId = null;
 
+// Calculate maximum safe scale that keeps element within viewport
+function calculateMaxSafeScale(element, preferredScale, centerX, centerY) {
+  const rect = element.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // Calculate maximum scale for each direction
+  const maxScaleX = Math.min(
+    viewportWidth / Math.max(centerX, rect.width - centerX, 1),
+    (viewportWidth - rect.left) / centerX,
+    (rect.left + rect.width) / (rect.width - centerX)
+  );
+  
+  const maxScaleY = Math.min(
+    viewportHeight / Math.max(centerY, rect.height - centerY, 1),
+    (viewportHeight - rect.top) / centerY,
+    (rect.top + rect.height) / (rect.height - centerY)
+  );
+  
+  // Use the minimum of both to ensure it fits
+  const maxSafeScale = Math.min(maxScaleX, maxScaleY);
+  
+  // Return the smaller of preferred scale or max safe scale
+  return Math.min(preferredScale, Math.max(1, maxSafeScale - 0.1)); // Small buffer for safety
+}
+
 // Smooth zoom using requestAnimationFrame for jitter-free performance
 function applyZoomToElement(element, scale, centerX, centerY) {
   if (!element) return;
@@ -18,65 +44,35 @@ function applyZoomToElement(element, scale, centerX, centerY) {
   }
   
   const rect = element.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
   
-  // Calculate where the element will be after zoom
-  const scaledWidth = rect.width * scale;
-  const scaledHeight = rect.height * scale;
-  
-  // Calculate the offset from original position
-  const offsetX = (scaledWidth - rect.width) * (centerX / rect.width);
-  const offsetY = (scaledHeight - rect.height) * (centerY / rect.height);
-  
-  // Calculate new position after zoom
-  const newLeft = rect.left - offsetX;
-  const newTop = rect.top - offsetY;
-  const newRight = newLeft + scaledWidth;
-  const newBottom = newTop + scaledHeight;
-  
-  // Adjust transform origin to keep element within viewport
-  let adjustedCenterX = centerX;
-  let adjustedCenterY = centerY;
-  
-  // If element would overflow right, adjust origin left
-  if (newRight > viewportWidth) {
-    const overflow = newRight - viewportWidth;
-    adjustedCenterX = Math.max(0, centerX - (overflow / (scale - 1)));
-  }
-  
-  // If element would overflow left, adjust origin right
-  if (newLeft < 0) {
-    const overflow = Math.abs(newLeft);
-    adjustedCenterX = Math.min(rect.width, centerX + (overflow / (scale - 1)));
-  }
-  
-  // If element would overflow bottom, adjust origin up
-  if (newBottom > viewportHeight) {
-    const overflow = newBottom - viewportHeight;
-    adjustedCenterY = Math.max(0, centerY - (overflow / (scale - 1)));
-  }
-  
-  // If element would overflow top, adjust origin down
-  if (newTop < 0) {
-    const overflow = Math.abs(newTop);
-    adjustedCenterY = Math.min(rect.height, centerY + (overflow / (scale - 1)));
-  }
+  // Calculate maximum safe scale that won't overflow
+  const safeScale = calculateMaxSafeScale(element, scale, centerX, centerY);
   
   // Ensure the zoomed element stays within bounds using CSS
   element.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
-  element.style.transformOrigin = `${adjustedCenterX}px ${adjustedCenterY}px`;
+  element.style.transformOrigin = `${centerX}px ${centerY}px`;
   element.style.zIndex = '999998'; // Ensure it's above other content
   element.style.position = 'relative'; // Help with stacking context
   
   rafId = requestAnimationFrame(() => {
-    element.style.transform = `scale(${scale})`;
+    element.style.transform = `scale(${safeScale})`;
     element.style.willChange = 'transform'; // Optimize for smooth performance
   });
 }
 
 function removeZoomFromElement(element) {
   if (!element) return;
+  
+  // If it's a wrapper span, unwrap it
+  if (element.classList && element.classList.contains('octheia-zoom-selection')) {
+    const parent = element.parentNode;
+    if (parent) {
+      const textNode = document.createTextNode(element.textContent);
+      parent.replaceChild(textNode, element);
+      parent.normalize();
+    }
+    return;
+  }
   
   if (rafId) {
     cancelAnimationFrame(rafId);
@@ -284,6 +280,114 @@ function handleRegionMouseMove(event) {
   regionOverlay.style.height = height + 'px';
 }
 
+// Create a wrapper span around selected text range
+function wrapTextRangeInSpan(range) {
+  try {
+    // Create a span wrapper for the selected text
+    const span = document.createElement('span');
+    span.className = 'octheia-zoom-selection';
+    span.style.display = 'inline-block';
+    
+    try {
+      range.surroundContents(span);
+      return span;
+    } catch (e) {
+      // If surroundContents fails, try extractContents approach
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
+      return span;
+    }
+  } catch (e) {
+    console.error('Error wrapping text range:', e);
+    return null;
+  }
+}
+
+// Get text range that intersects with selection rectangle
+function getTextRangeInRegion(left, top, right, bottom) {
+  // Clear any existing selection
+  window.getSelection().removeAllRanges();
+  
+  const range = document.createRange();
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
+  
+  let textNode;
+  let foundStart = false;
+  let startNode = null;
+  let startOffset = 0;
+  let endNode = null;
+  let endOffset = 0;
+  
+  while (textNode = walker.nextNode()) {
+    if (!textNode.textContent || textNode.textContent.trim().length === 0) continue;
+    
+    const rangeTest = document.createRange();
+    rangeTest.selectNodeContents(textNode);
+    const rects = rangeTest.getClientRects();
+    
+    for (let i = 0; i < rects.length; i++) {
+      const rect = rects[i];
+      
+      // Check if this text rect intersects with selection region
+      const intersectsX = rect.right >= left && rect.left <= right;
+      const intersectsY = rect.bottom >= top && rect.top <= bottom;
+      
+      if (intersectsX && intersectsY) {
+        // Calculate which characters are within the region
+        const charsInNode = textNode.textContent.length;
+        const rectWidth = rect.right - rect.left;
+        const charWidth = rectWidth / charsInNode;
+        
+        // Find start and end character positions
+        const relLeft = Math.max(0, left - rect.left);
+        const relRight = Math.min(rectWidth, right - rect.left);
+        const startChar = Math.floor(relLeft / charWidth);
+        const endChar = Math.ceil(relRight / charWidth);
+        
+        if (!foundStart) {
+          startNode = textNode;
+          startOffset = Math.max(0, Math.min(charsInNode, startChar));
+          foundStart = true;
+        }
+        
+        endNode = textNode;
+        endOffset = Math.max(0, Math.min(charsInNode, endChar));
+      }
+    }
+  }
+  
+  if (startNode && endNode) {
+    try {
+      range.setStart(startNode, startOffset);
+      range.setEnd(endNode, endOffset);
+      return range;
+    } catch (e) {
+      // If range creation fails, return null
+      return null;
+    }
+  }
+  
+  return null;
+}
+
+// Remove previous zoom selection wrappers
+function removeZoomWrappers() {
+  const wrappers = document.querySelectorAll('.octheia-zoom-selection');
+  wrappers.forEach(wrapper => {
+    const parent = wrapper.parentNode;
+    if (parent) {
+      parent.replaceChild(document.createTextNode(wrapper.textContent), wrapper);
+      parent.normalize(); // Merge adjacent text nodes
+    }
+  });
+}
+
 function handleRegionMouseUp(event) {
   if (!hoverZoomEnabled || zoomMode !== 'region' || !isSelectingRegion) return;
   
@@ -300,25 +404,34 @@ function handleRegionMouseUp(event) {
   const top = Math.min(regionStartY, endY);
   const right = Math.max(regionStartX, endX);
   const bottom = Math.max(regionStartY, endY);
-  const centerX = (left + right) / 2;
-  const centerY = (top + bottom) / 2;
+  
+  // Don't process if region is too small
+  if (Math.abs(right - left) < 5 || Math.abs(bottom - top) < 5) {
+    event.preventDefault();
+    return;
+  }
   
   // Clear previous region selection
   if (regionSelection) {
-    removeZoomFromElement(regionSelection);
+    removeZoomWrappers();
     regionSelection = null;
   }
   
-  // Find text element in the center of selected region
-  const element = getTextElementAtPoint(centerX, centerY);
+  // Get text range within the selected region
+  const textRange = getTextRangeInRegion(left, top, right, bottom);
   
-  if (element && isTextElement(element)) {
-    const rect = element.getBoundingClientRect();
-    const elementCenterX = rect.width / 2;
-    const elementCenterY = rect.height / 2;
+  if (textRange && !textRange.collapsed) {
+    // Wrap the selected text in a span
+    const wrapper = wrapTextRangeInSpan(textRange);
     
-    applyZoomToElement(element, zoomMagnification, elementCenterX, elementCenterY);
-    regionSelection = element;
+    if (wrapper) {
+      regionSelection = wrapper;
+      const rect = wrapper.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      applyZoomToElement(wrapper, zoomMagnification, centerX, centerY);
+    }
   }
   
   event.preventDefault();
@@ -330,6 +443,7 @@ function handleKeyDown(event) {
   if (event.key === 'Escape' && hoverZoomEnabled && zoomMode === 'region' && regionSelection) {
     removeZoomFromElement(regionSelection);
     regionSelection = null;
+    removeZoomWrappers(); // Clean up any remaining wrappers
     event.preventDefault();
   }
 }
