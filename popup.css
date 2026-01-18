@@ -8,12 +8,17 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   width: 350px;
   min-height: 500px;
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 50%, #3b82f6 100%) !important;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(37, 99, 235, 0.5) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(30, 64, 175, 0.3) 0%, transparent 70%),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #1e40af 50%, #2563eb 75%, #3b82f6 100%) !important;
   background-attachment: fixed;
   color: #333;
   margin: 0;
   padding: 0;
   position: relative;
+  overflow: hidden;
 }
 
 body::before {
@@ -24,9 +29,46 @@ body::before {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    radial-gradient(circle at 10% 40%, rgba(96, 165, 250, 0.2) 0%, transparent 40%),
+    radial-gradient(circle at 90% 60%, rgba(59, 130, 246, 0.25) 0%, transparent 40%),
+    radial-gradient(circle at 50% 10%, rgba(147, 197, 253, 0.15) 0%, transparent 30%);
   pointer-events: none;
+  animation: pulse 8s ease-in-out infinite;
+}
+
+body::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.03) 2px,
+      rgba(255, 255, 255, 0.03) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.03) 2px,
+      rgba(255, 255, 255, 0.03) 4px
+    );
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
 }
 
 .container {
@@ -44,19 +86,42 @@ body::before {
 header {
   text-align: center;
   margin: 0 -20px 25px -20px;
-  padding: 20px 20px 15px 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid rgba(37, 99, 235, 0.3);
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 30px 20px 20px 20px;
+  padding-bottom: 20px;
+  border-bottom: none;
+  background: transparent;
+  box-shadow: none;
   border-radius: 0;
+  position: relative;
+  z-index: 10;
+}
+
+header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.6), transparent);
+  border-radius: 2px;
 }
 
 .logo {
-  width: 120px;
+  width: 140px;
   height: auto;
   display: block;
-  margin: 0 auto 10px auto;
+  margin: 0 auto 15px auto;
+  filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.4));
+  transition: transform 0.3s ease, filter 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 6px 16px rgba(59, 130, 246, 0.6));
 }
 
 h1, .subtitle {
