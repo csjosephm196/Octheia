@@ -14,8 +14,7 @@ const lightModeBtn = document.getElementById('lightMode');
 const darkModeBtn = document.getElementById('darkMode');
 const nightModeBtn = document.getElementById('nightMode');
 
-const aiCommandInput = document.getElementById('aiCommand');
-const aiOptimizeBtn = document.getElementById('aiOptimizeBtn');
+// AI Optimizer removed
 
 // High contrast theme buttons
 const highContrastYellowBtn = document.getElementById('highContrastYellow');
@@ -53,7 +52,7 @@ async function loadSettings() {
   try {
     const result = await chrome.storage.local.get([
       'hoverZoomEnabled', 'zoomMagnification', 'zoomMode', 'backgroundColor', 'customColor', 'contrast', 
-      'displayMode', 'aiOptimized', 'highContrastTheme', 'focusModeEnabled', 'colorBlindnessType', 'altTextModeEnabled'
+      'displayMode', 'highContrastTheme', 'focusModeEnabled', 'colorBlindnessType', 'altTextModeEnabled'
     ]);
     
     if (result.zoomMagnification || result.zoomMagnification === 0) {
@@ -209,50 +208,48 @@ function showStatus(message) {
   }, 2000);
 }
 
-// AI Optimizer - intelligently parses any prompt and optimizes settings
-async function optimizeWithAI(command) {
-  const lowerCommand = command.toLowerCase().trim();
-  
-  // Get current settings
-  const currentSettings = await chrome.storage.local.get([
-    'hoverZoomEnabled', 'zoomMagnification', 'zoomMode', 
-    'backgroundColor', 'customColor', 'contrast', 'displayMode', 'colorBlindnessType',
-    'highContrastTheme', 'focusModeEnabled', 'altTextModeEnabled'
-  ]);
-  
-  let optimized = { 
-    hoverZoomEnabled: currentSettings.hoverZoomEnabled || false,
-    zoomMagnification: currentSettings.zoomMagnification || 200,
-    zoomMode: currentSettings.zoomMode || 'none',
-    backgroundColor: currentSettings.backgroundColor || 'default',
-    customColor: currentSettings.customColor,
-    contrast: currentSettings.contrast || 100,
-    displayMode: currentSettings.displayMode || 'none',
-    colorBlindnessType: currentSettings.colorBlindnessType || 'off',
-    highContrastTheme: currentSettings.highContrastTheme || 'off',
-    focusModeEnabled: currentSettings.focusModeEnabled || false,
-    altTextModeEnabled: currentSettings.altTextModeEnabled || false
-  };
-  
-  let changes = [];
-  
-  // Extract numbers from command
-  const numbers = lowerCommand.match(/\d+/g);
-  const extractedNumbers = numbers ? numbers.map(n => parseInt(n)) : [];
-  
-  // Parse zoom magnification commands
-  if (lowerCommand.match(/\b(zoom|magnification|magnify)\s*(to|at|is|=)?\s*(\d+)/i)) {
-    const match = lowerCommand.match(/(\d+)\s*(percent|%)?/i);
-    if (match) {
-      let mag = parseInt(match[1]);
-      if (mag < 150) mag = 150;
-      if (mag > 500) mag = 500;
-      optimized.zoomMagnification = mag;
-      optimized.hoverZoomEnabled = true;
-      if (optimized.zoomMode === 'none') optimized.zoomMode = 'none'; // Default hover mode
-      changes.push(`Zoom magnification set to ${mag}%`);
-    }
-  } else if (lowerCommand.includes('bigger zoom') || lowerCommand.includes('more zoom') || 
+// AI Optimizer function removed - entire feature deleted
+
+// Hover zoom controls
+if (zoomMagnificationSlider) {
+  zoomMagnificationSlider.addEventListener('input', (e) => {
+    zoomMagnificationValue.textContent = e.target.value + '%';
+    saveSettings();
+  });
+}
+
+if (zoomModeCursorBtn) {
+  zoomModeCursorBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomModeCursorBtn.classList.add('active');
+    saveSettings();
+  });
+}
+
+if (zoomModeRegionBtn) {
+  zoomModeRegionBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomModeRegionBtn.classList.add('active');
+    saveSettings();
+  });
+}
+
+if (zoomDisableBtn) {
+  zoomDisableBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomDisableBtn.classList.add('active');
+    saveSettings();
+  });
+}
+
+// Background color controls
+backgroundColorButtons.forEach(btn => { 
              lowerCommand.includes('increase zoom') || lowerCommand.includes('zoom in more')) {
     const increment = extractedNumbers[0] || 50;
     optimized.zoomMagnification = Math.min(500, optimized.zoomMagnification + increment);
@@ -739,26 +736,7 @@ if (altTextModeToggleBtn) {
   });
 }
 
-// AI Optimizer
-aiOptimizeBtn.addEventListener('click', async () => {
-  const command = aiCommandInput.value.trim();
-  if (command) {
-    await optimizeWithAI(command);
-    aiCommandInput.value = '';
-  } else {
-    showStatus('Please enter a command');
-  }
-});
-
-aiCommandInput.addEventListener('keypress', async (e) => {
-  if (e.key === 'Enter') {
-    const command = aiCommandInput.value.trim();
-    if (command) {
-      await optimizeWithAI(command);
-      aiCommandInput.value = '';
-    }
-  }
-});
+// AI Optimizer removed - event listeners deleted
 
 // Reset all
 resetAllBtn.addEventListener('click', async () => {
