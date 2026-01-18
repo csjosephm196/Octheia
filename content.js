@@ -205,6 +205,56 @@ function applySettings(settings) {
     `;
   }
   
+  // Apply colorblindness assistance filters
+  if (settings.colorBlindnessType) {
+    switch(settings.colorBlindnessType) {
+      case 'protanopia':
+        // Red-blind assistance - enhance saturation and contrast to help distinguish colors
+        css += `
+          body, body * {
+            filter: contrast(1.2) saturate(1.4) brightness(1.05) !important;
+          }
+          /* Enhance red-green distinction */
+          a, button, [style*="color: red"], [style*="color: #ff"], [style*="color: rgb(255"] {
+            filter: contrast(1.3) saturate(1.6) !important;
+          }
+        `;
+        break;
+      case 'deuteranopia':
+        // Green-blind assistance - similar to protanopia
+        css += `
+          body, body * {
+            filter: contrast(1.2) saturate(1.4) brightness(1.05) !important;
+          }
+          /* Enhance red-green distinction */
+          a, button, [style*="color: green"], [style*="color: #00ff"], [style*="color: rgb(0,255"] {
+            filter: contrast(1.3) saturate(1.6) !important;
+          }
+        `;
+        break;
+      case 'tritanopia':
+        // Blue-blind assistance - enhance blue-yellow distinction
+        css += `
+          body, body * {
+            filter: contrast(1.25) saturate(1.5) brightness(1.05) !important;
+          }
+          /* Enhance blue-yellow distinction */
+          a, button, [style*="color: blue"], [style*="color: #00"], [style*="color: rgb(0,0,255"] {
+            filter: contrast(1.4) saturate(1.7) !important;
+          }
+        `;
+        break;
+      case 'colorblind-help':
+        // General colorblindness assistance - high contrast and saturation
+        css += `
+          body, body * {
+            filter: contrast(1.3) saturate(1.5) !important;
+          }
+        `;
+        break;
+    }
+  }
+  
   // Apply contrast - ONLY affects text, images, and cursor, NOT background
   if (settings.contrast && settings.contrast !== 100) {
     // Get the current background color
@@ -315,13 +365,14 @@ function loadAndApplySettings() {
   }
   
   try {
-    chrome.storage.local.get(['backgroundColor', 'customColor', 'contrast', 'displayMode'], (result) => {
+    chrome.storage.local.get(['backgroundColor', 'customColor', 'contrast', 'displayMode', 'colorBlindnessType'], (result) => {
       if (!isExtensionContextValid()) return;
       applySettings({
         backgroundColor: result.backgroundColor || 'default',
         customColor: result.customColor,
         contrast: result.contrast || 100,
-        displayMode: result.displayMode
+        displayMode: result.displayMode,
+        colorBlindnessType: result.colorBlindnessType
       });
     });
   } catch (error) {
