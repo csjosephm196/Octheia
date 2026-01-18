@@ -209,71 +209,72 @@ function applySettings(settings) {
   
   // Apply high contrast themes (highest priority - overrides all other background/display settings)
   if (settings.highContrastTheme && settings.highContrastTheme !== 'off') {
+    let textColor, linkColor;
     switch(settings.highContrastTheme) {
       case 'yellow-black':
-        css += `
-          html, body {
-            background-color: #000000 !important;
-          }
-          body, p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, label, input, textarea, select, button {
-            color: #FFFF00 !important;
-            background-color: #000000 !important;
-          }
-          a {
-            color: #FFFF00 !important;
-            text-decoration: underline !important;
-          }
-          div, section, article, main, header, footer, aside, nav {
-            background-color: #000000 !important;
-          }
-          img, video, canvas, svg {
-            background-color: transparent !important;
-          }
-        `;
+        textColor = '#FFFF00';
+        linkColor = '#FFFF00';
         break;
       case 'white-black':
-        css += `
-          html, body {
-            background-color: #000000 !important;
-          }
-          body, p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, label, input, textarea, select, button {
-            color: #FFFFFF !important;
-            background-color: #000000 !important;
-          }
-          a {
-            color: #FFFFFF !important;
-            text-decoration: underline !important;
-          }
-          div, section, article, main, header, footer, aside, nav {
-            background-color: #000000 !important;
-          }
-          img, video, canvas, svg {
-            background-color: transparent !important;
-          }
-        `;
+        textColor = '#FFFFFF';
+        linkColor = '#FFFFFF';
         break;
       case 'green-black':
-        css += `
-          html, body {
-            background-color: #000000 !important;
-          }
-          body, p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, label, input, textarea, select, button {
-            color: #00FF00 !important;
-            background-color: #000000 !important;
-          }
-          a {
-            color: #00FF00 !important;
-            text-decoration: underline !important;
-          }
-          div, section, article, main, header, footer, aside, nav {
-            background-color: #000000 !important;
-          }
-          img, video, canvas, svg {
-            background-color: transparent !important;
-          }
-        `;
+        textColor = '#00FF00';
+        linkColor = '#00FF00';
         break;
+      default:
+        textColor = '#FFFFFF';
+        linkColor = '#FFFFFF';
     }
+    
+    css += `
+      html, body {
+        background-color: #000000 !important;
+        color: ${textColor} !important;
+      }
+      * {
+        border-color: ${textColor} !important;
+      }
+      body, p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, label, 
+      input, textarea, select, button, code, pre, strong, em, b, i, 
+      small, sub, sup, blockquote, cite, q, abbr, address, time, mark, 
+      del, ins, s, u, dfn, kbd, samp, var {
+        color: ${textColor} !important;
+        background-color: #000000 !important;
+      }
+      a, a:link, a:visited, a:hover, a:active, a:focus {
+        color: ${linkColor} !important;
+        text-decoration: underline !important;
+        background-color: transparent !important;
+      }
+      div, section, article, main, header, footer, aside, nav, 
+      form, fieldset, legend, table, tr, tbody, thead, tfoot {
+        background-color: #000000 !important;
+      }
+      input[type="text"], input[type="email"], input[type="password"], 
+      input[type="search"], input[type="url"], input[type="tel"], 
+      input[type="number"], textarea, select {
+        background-color: #000000 !important;
+        color: ${textColor} !important;
+        border: 1px solid ${textColor} !important;
+      }
+      input::placeholder, textarea::placeholder {
+        color: ${textColor} !important;
+        opacity: 0.7 !important;
+      }
+      button, input[type="button"], input[type="submit"], input[type="reset"] {
+        background-color: #000000 !important;
+        color: ${textColor} !important;
+        border: 1px solid ${textColor} !important;
+      }
+      img, video, canvas, svg, iframe {
+        background-color: transparent !important;
+      }
+      iframe {
+        border: 1px solid ${textColor} !important;
+      }
+    `;
   }
   
   // Apply enhanced colorblindness filters with optimal color shifting
