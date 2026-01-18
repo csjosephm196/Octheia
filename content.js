@@ -121,7 +121,7 @@ function applySettings(settings) {
     
     // Apply display modes (only if background color is not explicitly set and high contrast is off)
     if (settings.displayMode && !shouldOverrideDisplayMode) {
-    if (settings.displayMode === 'light') {
+      if (settings.displayMode === 'light') {
       css += `
         html, body {
           background-color: #ffffff !important;
@@ -186,6 +186,7 @@ function applySettings(settings) {
           color: #ffb366 !important;
         }
       `;
+      }
     }
   }
   
