@@ -17,13 +17,57 @@ function applyZoomToElement(element, scale, centerX, centerY) {
     cancelAnimationFrame(rafId);
   }
   
-  // Use CSS transform for smooth zoom
-  const currentTransform = element.style.transform || '';
-  const existingScale = currentTransform.match(/scale\(([^)]+)\)/);
+  const rect = element.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
   
-  // Smooth transition
+  // Calculate where the element will be after zoom
+  const scaledWidth = rect.width * scale;
+  const scaledHeight = rect.height * scale;
+  
+  // Calculate the offset from original position
+  const offsetX = (scaledWidth - rect.width) * (centerX / rect.width);
+  const offsetY = (scaledHeight - rect.height) * (centerY / rect.height);
+  
+  // Calculate new position after zoom
+  const newLeft = rect.left - offsetX;
+  const newTop = rect.top - offsetY;
+  const newRight = newLeft + scaledWidth;
+  const newBottom = newTop + scaledHeight;
+  
+  // Adjust transform origin to keep element within viewport
+  let adjustedCenterX = centerX;
+  let adjustedCenterY = centerY;
+  
+  // If element would overflow right, adjust origin left
+  if (newRight > viewportWidth) {
+    const overflow = newRight - viewportWidth;
+    adjustedCenterX = Math.max(0, centerX - (overflow / (scale - 1)));
+  }
+  
+  // If element would overflow left, adjust origin right
+  if (newLeft < 0) {
+    const overflow = Math.abs(newLeft);
+    adjustedCenterX = Math.min(rect.width, centerX + (overflow / (scale - 1)));
+  }
+  
+  // If element would overflow bottom, adjust origin up
+  if (newBottom > viewportHeight) {
+    const overflow = newBottom - viewportHeight;
+    adjustedCenterY = Math.max(0, centerY - (overflow / (scale - 1)));
+  }
+  
+  // If element would overflow top, adjust origin down
+  if (newTop < 0) {
+    const overflow = Math.abs(newTop);
+    adjustedCenterY = Math.min(rect.height, centerY + (overflow / (scale - 1)));
+  }
+  
+  // Ensure the zoomed element stays within bounds using CSS
   element.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
-  element.style.transformOrigin = `${centerX}px ${centerY}px`;
+  element.style.transformOrigin = `${adjustedCenterX}px ${adjustedCenterY}px`;
+  element.style.zIndex = '999998'; // Ensure it's above other content
+  element.style.position = 'relative'; // Help with stacking context
   
   rafId = requestAnimationFrame(() => {
     element.style.transform = `scale(${scale})`;
@@ -42,6 +86,8 @@ function removeZoomFromElement(element) {
     element.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
     element.style.transform = 'scale(1)';
     element.style.willChange = 'auto';
+    element.style.zIndex = '';
+    element.style.position = '';
   });
 }
 
@@ -278,6 +324,16 @@ function handleRegionMouseUp(event) {
   event.preventDefault();
 }
 
+// Handle keyboard events to undo region selection
+function handleKeyDown(event) {
+  // Escape key to undo region selection zoom
+  if (event.key === 'Escape' && hoverZoomEnabled && zoomMode === 'region' && regionSelection) {
+    removeZoomFromElement(regionSelection);
+    regionSelection = null;
+    event.preventDefault();
+  }
+}
+
 // Initialize hover zoom
 function initializeHoverZoom(settings) {
   const enabled = settings.hoverZoomEnabled || false;
@@ -294,6 +350,9 @@ function initializeHoverZoom(settings) {
   hoverZoomEnabled = enabled;
   zoomMagnification = mag;
   zoomMode = mode;
+  
+  // Add keyboard listener for Escape key (always active when zoom is enabled)
+  document.addEventListener('keydown', handleKeyDown, { passive: false });
   
   if (mode === 'cursor') {
     document.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -322,6 +381,7 @@ function cleanupHoverZoom() {
   document.removeEventListener('mousedown', handleRegionMouseDown);
   document.removeEventListener('mousemove', handleRegionMouseMove);
   document.removeEventListener('mouseup', handleRegionMouseUp);
+  document.removeEventListener('keydown', handleKeyDown);
   
   // Reset zoom on all elements
   if (hoveredElement) {
