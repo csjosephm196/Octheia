@@ -25,6 +25,16 @@ const aiOptimizeBtn = document.getElementById('aiOptimizeBtn');
 
 const resetAllBtn = document.getElementById('resetAll');
 const statusDiv = document.getElementById('status');
+const logoImg = document.getElementById('logo');
+
+// Set logo source using extension URL
+if (logoImg) {
+  logoImg.src = chrome.runtime.getURL('logo.png');
+  // Handle logo load error gracefully
+  logoImg.onerror = function() {
+    this.style.display = 'none';
+  };
+}
 
 // Load saved settings
 async function loadSettings() {

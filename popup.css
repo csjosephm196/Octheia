@@ -29,10 +29,12 @@ header {
 .logo {
   width: 120px;
   height: auto;
-  margin-bottom: 10px;
   display: block;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 10px auto;
+}
+
+h1, .subtitle {
+  display: none;
 }
 
 h1 {
