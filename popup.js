@@ -5,8 +5,9 @@ const zoomModeCursorBtn = document.getElementById('zoomModeCursor');
 const zoomModeRegionBtn = document.getElementById('zoomModeRegion');
 const zoomDisableBtn = document.getElementById('zoomDisable');
 
-const backgroundColorButtons = document.querySelectorAll('.color-btn');
 const customColorPicker = document.getElementById('customColorPicker');
+const backgroundResetBtn = document.getElementById('backgroundReset');
+const colorWheelTrigger = document.getElementById('colorWheelTrigger');
 
 // Contrast slider removed
 
@@ -73,15 +74,7 @@ async function loadSettings() {
       zoomDisableBtn.classList.add('active');
     }
     
-    if (result.backgroundColor) {
-      backgroundColorButtons.forEach(btn => {
-        if (btn.dataset.color === result.backgroundColor) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
-    }
+    // Background color handling updated - no longer using color buttons
     
     if (result.customColor) {
       customColorPicker.value = result.customColor;
@@ -145,7 +138,6 @@ async function loadSettings() {
 
 // Save settings
 async function saveSettings() {
-  const activeColorBtn = document.querySelector('.color-btn.active');
   const activeZoomMode = document.querySelector('#zoomModeCursor.active') ? 'cursor' :
                          document.querySelector('#zoomModeRegion.active') ? 'region' : 'none';
   
@@ -156,7 +148,7 @@ async function saveSettings() {
     hoverZoomEnabled: activeZoomMode !== 'none',
     zoomMagnification: parseInt(zoomMagnificationSlider.value),
     zoomMode: activeZoomMode,
-    backgroundColor: activeColorBtn?.dataset.color || 'default',
+    backgroundColor: 'default',
     customColor: customColorPicker.value,
     contrast: 100, // Contrast slider removed, default to 100
     displayMode: document.querySelector('.btn-mode.active')?.dataset.mode || 'none',
@@ -248,24 +240,32 @@ if (zoomDisableBtn) {
   });
 }
 
-// Background color controls
-backgroundColorButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    backgroundColorButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    customColorPicker.value = '#ffffff'; // Reset custom picker
+// Background reset button
+if (backgroundResetBtn) {
+  backgroundResetBtn.addEventListener('click', () => {
+    // Reset custom color picker
+    customColorPicker.value = '#ffffff';
+    // Reset display mode buttons
+    [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
+      if (btn) btn.classList.remove('active');
+    });
     saveSettings();
   });
-});
+}
+
+// Color wheel trigger - opens color picker
+if (colorWheelTrigger) {
+  colorWheelTrigger.addEventListener('click', () => {
+    customColorPicker.click();
+  });
+}
 
 // Custom color picker
 customColorPicker.addEventListener('change', (e) => {
-  backgroundColorButtons.forEach(b => b.classList.remove('active'));
   saveSettings();
 });
 
 customColorPicker.addEventListener('input', (e) => {
-  backgroundColorButtons.forEach(b => b.classList.remove('active'));
   saveSettings();
 });
 
@@ -358,13 +358,7 @@ resetAllBtn.addEventListener('click', async () => {
     });
     zoomDisableBtn.classList.add('active');
   }
-  // Contrast slider removed
-  backgroundColorButtons.forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.color === 'default') {
-      btn.classList.add('active');
-    }
-  });
+  // Reset background color
   customColorPicker.value = '#ffffff';
   [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
     if (btn) btn.classList.remove('active');

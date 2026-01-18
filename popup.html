@@ -30,11 +30,31 @@
     <div class="control-group">
       <label>
         <span class="label-text">Background & Display</span>
+        <div class="header-actions">
+          <button class="btn-reset" id="backgroundReset" title="Reset Background">Reset</button>
+          <button class="color-wheel-btn" id="colorWheelTrigger" title="Pick Custom Color">
+            <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <!-- Red segment -->
+              <path d="M 12 2 L 20 12 L 12 12 Z" fill="#ff0000"/>
+              <!-- Orange segment -->
+              <path d="M 20 12 L 17.07 17.07 L 12 12 Z" fill="#ff8800"/>
+              <!-- Yellow segment -->
+              <path d="M 17.07 17.07 L 12 22 L 12 12 Z" fill="#ffff00"/>
+              <!-- Green segment -->
+              <path d="M 12 22 L 6.93 17.07 L 12 12 Z" fill="#00ff00"/>
+              <!-- Cyan segment -->
+              <path d="M 6.93 17.07 L 2 12 L 12 12 Z" fill="#00ffff"/>
+              <!-- Blue segment -->
+              <path d="M 2 12 L 6.93 6.93 L 12 12 Z" fill="#0000ff"/>
+              <!-- Magenta segment -->
+              <path d="M 6.93 6.93 L 12 2 L 12 12 Z" fill="#ff00ff"/>
+              <circle cx="12" cy="12" r="5" fill="white" stroke="#ddd" stroke-width="1"/>
+              <circle cx="12" cy="12" r="2" fill="#666"/>
+            </svg>
+          </button>
+        </div>
       </label>
-      <div class="color-options">
-        <button class="color-btn" data-color="default" title="Default">Default</button>
-        <input type="color" id="customColorPicker" class="color-picker" title="Custom Color" value="#ffffff">
-      </div>
+      <input type="color" id="customColorPicker" class="color-picker-hidden" value="#ffffff">
       <div class="button-group" style="margin-top: 10px;">
         <button class="btn-mode" id="lightMode" data-mode="light">Light Mode</button>
         <button class="btn-mode" id="darkMode" data-mode="dark">Dark Mode</button>
