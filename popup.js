@@ -1,10 +1,9 @@
 // Get DOM elements
-const textSizeSlider = document.getElementById('textSize');
-const textSizeValue = document.getElementById('textSizeValue');
-const textSizeSmall = document.getElementById('textSizeSmall');
-const textSizeMedium = document.getElementById('textSizeMedium');
-const textSizeLarge = document.getElementById('textSizeLarge');
-const textSizeReset = document.getElementById('textSizeReset');
+const zoomMagnificationSlider = document.getElementById('zoomMagnification');
+const zoomMagnificationValue = document.getElementById('zoomMagnificationValue');
+const zoomModeCursorBtn = document.getElementById('zoomModeCursor');
+const zoomModeRegionBtn = document.getElementById('zoomModeRegion');
+const zoomDisableBtn = document.getElementById('zoomDisable');
 
 const backgroundColorButtons = document.querySelectorAll('.color-btn');
 const customColorPicker = document.getElementById('customColorPicker');
@@ -25,18 +24,41 @@ const aiOptimizeBtn = document.getElementById('aiOptimizeBtn');
 
 const resetAllBtn = document.getElementById('resetAll');
 const statusDiv = document.getElementById('status');
+const logoImg = document.getElementById('logo');
+
+// Set logo source using extension URL
+if (logoImg) {
+  logoImg.src = chrome.runtime.getURL('logo.png');
+  // Handle logo load error gracefully
+  logoImg.onerror = function() {
+    this.style.display = 'none';
+  };
+}
 
 // Load saved settings
 async function loadSettings() {
   try {
     const result = await chrome.storage.local.get([
-      'textSize', 'backgroundColor', 'customColor', 'contrast', 
+      'hoverZoomEnabled', 'zoomMagnification', 'zoomMode', 'backgroundColor', 'customColor', 'contrast', 
       'displayMode', 'aiOptimized'
     ]);
     
-    if (result.textSize) {
-      textSizeSlider.value = result.textSize;
-      textSizeValue.textContent = result.textSize + '%';
+    if (result.zoomMagnification || result.zoomMagnification === 0) {
+      zoomMagnificationSlider.value = result.zoomMagnification || 200;
+      zoomMagnificationValue.textContent = (result.zoomMagnification || 200) + '%';
+    }
+    
+    // Set active zoom mode button
+    if (result.zoomMode) {
+      [zoomModeCursorBtn, zoomModeRegionBtn].forEach(btn => {
+        if (btn && btn.dataset.mode === result.zoomMode) {
+          btn.classList.add('active');
+        } else if (btn) {
+          btn.classList.remove('active');
+        }
+      });
+    } else if (!result.hoverZoomEnabled && zoomDisableBtn) {
+      zoomDisableBtn.classList.add('active');
     }
     
     if (result.backgroundColor) {
@@ -75,8 +97,13 @@ async function loadSettings() {
 // Save settings
 async function saveSettings() {
   const activeColorBtn = document.querySelector('.color-btn.active');
+  const activeZoomMode = document.querySelector('#zoomModeCursor.active') ? 'cursor' :
+                         document.querySelector('#zoomModeRegion.active') ? 'region' : 'none';
+  
   const settings = {
-    textSize: parseInt(textSizeSlider.value),
+    hoverZoomEnabled: activeZoomMode !== 'none',
+    zoomMagnification: parseInt(zoomMagnificationSlider.value),
+    zoomMode: activeZoomMode,
     backgroundColor: activeColorBtn?.dataset.color || 'default',
     customColor: customColorPicker.value,
     contrast: parseInt(contrastSlider.value),
@@ -131,15 +158,19 @@ async function optimizeWithAI(command) {
   
   // Get current settings
   const currentSettings = await chrome.storage.local.get([
-    'textSize', 'backgroundColor', 'customColor', 'contrast', 'displayMode'
+    'hoverZoomEnabled', 'zoomMagnification', 'zoomMode', 
+    'backgroundColor', 'customColor', 'contrast', 'displayMode', 'colorBlindnessType'
   ]);
   
   let optimized = { 
-    textSize: currentSettings.textSize || 100,
+    hoverZoomEnabled: currentSettings.hoverZoomEnabled || false,
+    zoomMagnification: currentSettings.zoomMagnification || 200,
+    zoomMode: currentSettings.zoomMode || 'none',
     backgroundColor: currentSettings.backgroundColor || 'default',
     customColor: currentSettings.customColor,
     contrast: currentSettings.contrast || 100,
-    displayMode: currentSettings.displayMode || 'none'
+    displayMode: currentSettings.displayMode || 'none',
+    colorBlindnessType: currentSettings.colorBlindnessType || null
   };
   
   let changes = [];
@@ -148,26 +179,30 @@ async function optimizeWithAI(command) {
   const numbers = lowerCommand.match(/\d+/g);
   const extractedNumbers = numbers ? numbers.map(n => parseInt(n)) : [];
   
-  // Parse text size commands
-  if (lowerCommand.match(/\b(text|font|size|zoom)\s*(size|zoom)?\s*(to|at|is|=)?\s*(\d+)/i)) {
-    const match = lowerCommand.match(/(\d+)\s*(percent|%|px)?/i);
+  // Parse zoom magnification commands
+  if (lowerCommand.match(/\b(zoom|magnification|magnify)\s*(to|at|is|=)?\s*(\d+)/i)) {
+    const match = lowerCommand.match(/(\d+)\s*(percent|%)?/i);
     if (match) {
-      let size = parseInt(match[1]);
-      if (size < 50) size = 50;
-      if (size > 300) size = 300;
-      optimized.textSize = size;
-      changes.push(`Text size set to ${size}%`);
+      let mag = parseInt(match[1]);
+      if (mag < 150) mag = 150;
+      if (mag > 500) mag = 500;
+      optimized.zoomMagnification = mag;
+      optimized.hoverZoomEnabled = true;
+      if (optimized.zoomMode === 'none') optimized.zoomMode = 'none'; // Default hover mode
+      changes.push(`Zoom magnification set to ${mag}%`);
     }
-  } else if (lowerCommand.includes('bigger') || lowerCommand.includes('larger') || 
-             lowerCommand.includes('increase') || lowerCommand.includes('zoom in')) {
-    const increment = extractedNumbers[0] || 20;
-    optimized.textSize = Math.min(300, optimized.textSize + increment);
-    changes.push(`Text size increased to ${optimized.textSize}%`);
-  } else if (lowerCommand.includes('smaller') || lowerCommand.includes('decrease') || 
-             lowerCommand.includes('zoom out')) {
-    const decrement = extractedNumbers[0] || 20;
-    optimized.textSize = Math.max(50, optimized.textSize - decrement);
-    changes.push(`Text size decreased to ${optimized.textSize}%`);
+  } else if (lowerCommand.includes('bigger zoom') || lowerCommand.includes('more zoom') || 
+             lowerCommand.includes('increase zoom') || lowerCommand.includes('zoom in more')) {
+    const increment = extractedNumbers[0] || 50;
+    optimized.zoomMagnification = Math.min(500, optimized.zoomMagnification + increment);
+    optimized.hoverZoomEnabled = true;
+    changes.push(`Zoom magnification increased to ${optimized.zoomMagnification}%`);
+  } else if (lowerCommand.includes('smaller zoom') || lowerCommand.includes('less zoom') || 
+             lowerCommand.includes('decrease zoom') || lowerCommand.includes('zoom out more')) {
+    const decrement = extractedNumbers[0] || 50;
+    optimized.zoomMagnification = Math.max(150, optimized.zoomMagnification - decrement);
+    optimized.hoverZoomEnabled = true;
+    changes.push(`Zoom magnification decreased to ${optimized.zoomMagnification}%`);
   }
   
   // Parse contrast commands
@@ -232,26 +267,31 @@ async function optimizeWithAI(command) {
   if (lowerCommand.includes('pretty') || lowerCommand.includes('beautiful') || 
       lowerCommand.includes('nice') || lowerCommand.includes('aesthetic')) {
     optimized.contrast = 120;
-    optimized.textSize = Math.max(100, Math.min(120, optimized.textSize));
+    optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 200);
+    optimized.hoverZoomEnabled = true;
     changes.push('Optimized for visual appeal');
   }
   
   if (lowerCommand.includes('readable') || lowerCommand.includes('read') ||
       lowerCommand.includes('clear') || lowerCommand.includes('sharp')) {
     optimized.contrast = Math.max(optimized.contrast, 140);
-    optimized.textSize = Math.max(optimized.textSize, 110);
+    optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 220);
+    optimized.hoverZoomEnabled = true;
+    if (optimized.zoomMode === 'none') optimized.zoomMode = 'none';
     changes.push('Optimized for readability');
   }
   
   if (lowerCommand.includes('comfortable') || lowerCommand.includes('comfort') ||
       lowerCommand.includes('easy') || lowerCommand.includes('gentle')) {
     optimized.contrast = Math.min(optimized.contrast, 115);
-    optimized.textSize = Math.max(100, Math.min(110, optimized.textSize));
+    optimized.zoomMagnification = Math.max(150, Math.min(200, optimized.zoomMagnification));
+    optimized.hoverZoomEnabled = true;
     changes.push('Optimized for comfort');
   }
   
   if (lowerCommand.includes('bright') || lowerCommand.includes('brighter')) {
-    optimized.backgroundColor = 'white';
+    optimized.backgroundColor = 'default';
+    optimized.customColor = '#ffffff';
     optimized.contrast = Math.max(optimized.contrast, 110);
     changes.push('Brightened display');
   }
@@ -262,13 +302,98 @@ async function optimizeWithAI(command) {
     changes.push('Dimmed display');
   }
   
+  // Colorblindness support
+  if (lowerCommand.includes('colorblind') || lowerCommand.includes('color blind') || 
+      lowerCommand.includes('colorblindness') || lowerCommand.includes('color blindness')) {
+    
+    // Protanopia (red-blind) - red-green colorblindness
+    if (lowerCommand.includes('protanopia') || lowerCommand.includes('protan') || 
+        lowerCommand.includes('red-green') || lowerCommand.includes('red green') ||
+        lowerCommand.includes('red blind')) {
+      optimized.contrast = Math.max(optimized.contrast, 150);
+      optimized.backgroundColor = 'default';
+      optimized.customColor = null;
+      optimized.displayMode = 'light';
+      optimized.colorBlindnessType = 'protanopia';
+      changes.push('Optimized for protanopia (red-green colorblindness)');
+    }
+    // Deuteranopia (green-blind) - red-green colorblindness
+    else if (lowerCommand.includes('deuteranopia') || lowerCommand.includes('deuteran') ||
+             lowerCommand.includes('green blind')) {
+      optimized.contrast = Math.max(optimized.contrast, 150);
+      optimized.backgroundColor = 'default';
+      optimized.customColor = null;
+      optimized.displayMode = 'light';
+      optimized.colorBlindnessType = 'deuteranopia';
+      changes.push('Optimized for deuteranopia (red-green colorblindness)');
+    }
+    // Tritanopia (blue-blind) - blue-yellow colorblindness
+    else if (lowerCommand.includes('tritanopia') || lowerCommand.includes('tritan') ||
+             lowerCommand.includes('blue-yellow') || lowerCommand.includes('blue yellow') ||
+             lowerCommand.includes('blue blind')) {
+      optimized.contrast = Math.max(optimized.contrast, 160);
+      optimized.backgroundColor = 'default';
+      optimized.customColor = null;
+      optimized.displayMode = 'light';
+      optimized.colorBlindnessType = 'tritanopia';
+      changes.push('Optimized for tritanopia (blue-yellow colorblindness)');
+    }
+    // General colorblindness - high contrast, light background
+    else {
+      optimized.contrast = Math.max(optimized.contrast, 150);
+      optimized.backgroundColor = 'default';
+      optimized.customColor = null;
+      optimized.displayMode = 'light';
+      optimized.colorBlindnessType = 'colorblind-help';
+      changes.push('Optimized for colorblindness - high contrast enabled');
+    }
+  }
+  
+  // Accessibility-focused commands
+  if (lowerCommand.includes('easier to see') || lowerCommand.includes('hard to see') ||
+      lowerCommand.includes('difficult to see') || lowerCommand.includes('can\'t see') ||
+      lowerCommand.includes('cannot see')) {
+    optimized.contrast = Math.max(optimized.contrast, 160);
+    optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 250);
+    optimized.hoverZoomEnabled = true;
+    if (optimized.zoomMode === 'none') optimized.zoomMode = 'none';
+    optimized.displayMode = 'light';
+    changes.push('Optimized for better visibility');
+  }
+  
+  if (lowerCommand.includes('visually impaired') || lowerCommand.includes('low vision') ||
+      lowerCommand.includes('vision problem') || lowerCommand.includes('poor vision')) {
+    optimized.contrast = Math.max(optimized.contrast, 170);
+    optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 300);
+    optimized.hoverZoomEnabled = true;
+    if (optimized.zoomMode === 'none') optimized.zoomMode = 'none';
+    optimized.displayMode = 'light';
+    changes.push('Optimized for visual impairment');
+  }
+  
   // Apply optimized settings
   await chrome.storage.local.set(optimized);
   
   // Update UI
-  if (optimized.textSize !== undefined) {
-    textSizeSlider.value = optimized.textSize;
-    textSizeValue.textContent = optimized.textSize + '%';
+  if (optimized.zoomMagnification !== undefined) {
+    if (zoomMagnificationSlider) {
+      zoomMagnificationSlider.value = optimized.zoomMagnification;
+      zoomMagnificationValue.textContent = optimized.zoomMagnification + '%';
+    }
+  }
+  
+  if (optimized.zoomMode !== undefined && optimized.hoverZoomEnabled) {
+    if (optimized.zoomMode === 'cursor' && zoomModeCursorBtn) {
+      [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+        if (b) b.classList.remove('active');
+      });
+      zoomModeCursorBtn.classList.add('active');
+    } else if (optimized.zoomMode === 'region' && zoomModeRegionBtn) {
+      [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+        if (b) b.classList.remove('active');
+      });
+      zoomModeRegionBtn.classList.add('active');
+    }
   }
   if (optimized.contrast !== undefined) {
     contrastSlider.value = optimized.contrast;
@@ -296,6 +421,31 @@ async function optimizeWithAI(command) {
   // Save and apply
   await saveSettings();
   
+  // If no specific changes detected, try to infer intent from the command
+  if (changes.length === 0) {
+    // Try to extract any numbers for settings
+    if (extractedNumbers.length > 0) {
+      const num = extractedNumbers[0];
+      if (num >= 150 && num <= 500 && (lowerCommand.includes('zoom') || lowerCommand.includes('magnif'))) {
+        optimized.zoomMagnification = num;
+        optimized.hoverZoomEnabled = true;
+        changes.push(`Zoom set to ${num}%`);
+      } else if (num >= 50 && num <= 200 && (lowerCommand.includes('contrast'))) {
+        optimized.contrast = num;
+        changes.push(`Contrast set to ${num}%`);
+      }
+    }
+    
+    // Generic optimization based on keywords
+    if (lowerCommand.includes('better') || lowerCommand.includes('improve') || 
+        lowerCommand.includes('enhance') || lowerCommand.includes('optimize')) {
+      optimized.contrast = Math.max(optimized.contrast, 130);
+      optimized.zoomMagnification = Math.max(optimized.zoomMagnification, 220);
+      optimized.hoverZoomEnabled = true;
+      changes.push('Settings optimized for better viewing');
+    }
+  }
+  
   // Show status with changes
   if (changes.length > 0) {
     showStatus(changes.join(', '));
@@ -304,35 +454,43 @@ async function optimizeWithAI(command) {
   }
 }
 
-// Text size controls
-textSizeSlider.addEventListener('input', (e) => {
-  textSizeValue.textContent = e.target.value + '%';
-  saveSettings();
-});
+// Hover zoom controls
+if (zoomMagnificationSlider) {
+  zoomMagnificationSlider.addEventListener('input', (e) => {
+    zoomMagnificationValue.textContent = e.target.value + '%';
+    saveSettings();
+  });
+}
 
-textSizeSmall.addEventListener('click', () => {
-  textSizeSlider.value = 75;
-  textSizeValue.textContent = '75%';
-  saveSettings();
-});
+if (zoomModeCursorBtn) {
+  zoomModeCursorBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomModeCursorBtn.classList.add('active');
+    saveSettings();
+  });
+}
 
-textSizeMedium.addEventListener('click', () => {
-  textSizeSlider.value = 100;
-  textSizeValue.textContent = '100%';
-  saveSettings();
-});
+if (zoomModeRegionBtn) {
+  zoomModeRegionBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomModeRegionBtn.classList.add('active');
+    saveSettings();
+  });
+}
 
-textSizeLarge.addEventListener('click', () => {
-  textSizeSlider.value = 150;
-  textSizeValue.textContent = '150%';
-  saveSettings();
-});
-
-textSizeReset.addEventListener('click', () => {
-  textSizeSlider.value = 100;
-  textSizeValue.textContent = '100%';
-  saveSettings();
-});
+if (zoomDisableBtn) {
+  zoomDisableBtn.addEventListener('click', () => {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomDisableBtn.classList.add('active');
+    saveSettings();
+  });
+}
 
 // Background color controls
 backgroundColorButtons.forEach(btn => {
@@ -417,8 +575,16 @@ aiCommandInput.addEventListener('keypress', async (e) => {
 
 // Reset all
 resetAllBtn.addEventListener('click', async () => {
-  textSizeSlider.value = 100;
-  textSizeValue.textContent = '100%';
+  if (zoomMagnificationSlider) {
+    zoomMagnificationSlider.value = 200;
+    zoomMagnificationValue.textContent = '200%';
+  }
+  if (zoomDisableBtn) {
+    [zoomModeCursorBtn, zoomModeRegionBtn, zoomDisableBtn].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+    zoomDisableBtn.classList.add('active');
+  }
   contrastSlider.value = 100;
   contrastValue.textContent = '100%';
   backgroundColorButtons.forEach(btn => {
@@ -428,7 +594,9 @@ resetAllBtn.addEventListener('click', async () => {
     }
   });
   customColorPicker.value = '#ffffff';
-  [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => btn.classList.remove('active'));
+  [lightModeBtn, darkModeBtn, nightModeBtn].forEach(btn => {
+    if (btn) btn.classList.remove('active');
+  });
   
   await chrome.storage.local.clear();
   saveSettings();

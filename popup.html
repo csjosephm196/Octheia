@@ -9,44 +9,32 @@
 <body>
   <div class="container">
     <header>
-      <h1>Octheia</h1>
-      <p class="subtitle">Visual Accessibility Helper</p>
+      <img id="logo" src="" alt="Octheia Logo" class="logo">
     </header>
 
     <div class="control-group">
-      <label for="textSize">
-        <span class="label-text">Text Size</span>
-        <span class="value-display" id="textSizeValue">100%</span>
+      <label for="hoverZoom">
+        <span class="label-text">Hover Zoom</span>
+        <span class="value-display" id="zoomMagnificationValue">200%</span>
       </label>
-      <input type="range" id="textSize" min="50" max="300" value="100" step="10">
+      <input type="range" id="zoomMagnification" min="150" max="500" value="200" step="25">
       <div class="button-group">
-        <button class="btn-small" id="textSizeSmall">Small</button>
-        <button class="btn-small" id="textSizeMedium">Medium</button>
-        <button class="btn-small" id="textSizeLarge">Large</button>
-        <button class="btn-small" id="textSizeReset">Reset</button>
+        <button class="btn-small" id="zoomModeCursor" data-mode="cursor">Cursor Lock</button>
+        <button class="btn-small" id="zoomModeRegion" data-mode="region">Region Lock</button>
+        <button class="btn-small" id="zoomDisable">Disable</button>
       </div>
-    </div>
-
-    <div class="control-group">
-      <label for="backgroundColor">
-        <span class="label-text">Background Color</span>
-      </label>
-      <div class="color-options">
-        <button class="color-btn" data-color="black" style="background-color: #000000;" title="Black"></button>
-        <button class="color-btn" data-color="cream" style="background-color: #f5f5dc;" title="Cream"></button>
-        <button class="color-btn" data-color="yellow" style="background-color: #ffffcc;" title="Yellow"></button>
-        <button class="color-btn" data-color="blue" style="background-color: #e6f3ff;" title="Light Blue"></button>
-        <button class="color-btn" data-color="green" style="background-color: #e6ffe6;" title="Light Green"></button>
-        <button class="color-btn" data-color="default" title="Default">Default</button>
-        <input type="color" id="customColorPicker" class="color-picker" title="Custom Color" value="#ffffff">
-      </div>
+      <p class="help-text">💡 Press <kbd>Esc</kbd> to undo region selection or hover zoom</p>
     </div>
 
     <div class="control-group">
       <label>
-        <span class="label-text">Display Mode</span>
+        <span class="label-text">Background & Display</span>
       </label>
-      <div class="button-group">
+      <div class="color-options">
+        <button class="color-btn" data-color="default" title="Default">Default</button>
+        <input type="color" id="customColorPicker" class="color-picker" title="Custom Color" value="#ffffff">
+      </div>
+      <div class="button-group" style="margin-top: 10px;">
         <button class="btn-mode" id="lightMode" data-mode="light">Light Mode</button>
         <button class="btn-mode" id="darkMode" data-mode="dark">Dark Mode</button>
         <button class="btn-mode" id="nightMode" data-mode="night">Night Mode</button>
