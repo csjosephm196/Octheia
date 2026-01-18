@@ -30,11 +30,18 @@
     <div class="control-group">
       <label>
         <span class="label-text">Background & Display</span>
+        <div class="header-actions">
+          <button class="btn-reset" id="backgroundReset" title="Reset Background">Reset</button>
+          <button class="color-wheel-btn" id="colorWheelTrigger" title="Pick Custom Color">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+              <path d="M12 2 L12 22 M2 12 L22 12 M17.07 6.93 L6.93 17.07 M17.07 17.07 L6.93 6.93" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="12" cy="12" r="3" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
       </label>
-      <div class="color-options">
-        <button class="color-btn" data-color="default" title="Default">Default</button>
-        <input type="color" id="customColorPicker" class="color-picker" title="Custom Color" value="#ffffff">
-      </div>
+      <input type="color" id="customColorPicker" class="color-picker-hidden" value="#ffffff">
       <div class="button-group" style="margin-top: 10px;">
         <button class="btn-mode" id="lightMode" data-mode="light">Light Mode</button>
         <button class="btn-mode" id="darkMode" data-mode="dark">Dark Mode</button>
