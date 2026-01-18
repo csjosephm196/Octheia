@@ -137,7 +137,7 @@ function applySettings(settings) {
     // Apply display modes (only if background color is not explicitly set and high contrast is off)
     if (settings.displayMode && !shouldOverrideDisplayMode) {
       if (settings.displayMode === 'light') {
-      css += `
+        css += `
         html, body {
           background-color: #ffffff !important;
         }
@@ -153,9 +153,9 @@ function applySettings(settings) {
         img, video, canvas, svg {
           background-color: transparent !important;
         }
-      `;
-    } else if (settings.displayMode === 'dark') {
-      css += `
+        `;
+      } else if (settings.displayMode === 'dark') {
+        css += `
         html, body {
           background-color: #1a1a1a !important;
         }
@@ -175,10 +175,10 @@ function applySettings(settings) {
         a {
           color: #4a9eff !important;
         }
-      `;
-    } else if (settings.displayMode === 'night') {
-      // Night mode with blue light filter (warm colors)
-      css += `
+        `;
+      } else if (settings.displayMode === 'night') {
+        // Night mode with blue light filter (warm colors)
+        css += `
         html, body {
           background-color: #2a1f1a !important;
         }
@@ -200,7 +200,7 @@ function applySettings(settings) {
         a {
           color: #ffb366 !important;
         }
-      `;
+        `;
       }
     }
   }
